@@ -56,6 +56,7 @@ jobs:
             set -euo pipefail
             KUBECTL=/usr/local/bin/kubectl
             KUBECONFIG=/home/deployer/.kube/admin.config
+            export KUBECONFIG
             KUBE_DIR=/home/deployer/kubernetes
             HELM_BIN=/home/deployer/.local/bin/helm
             if [ -d "${KUBE_DIR}/kubernetes" ]; then
