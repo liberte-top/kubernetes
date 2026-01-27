@@ -91,6 +91,8 @@ jobs:
               --dry-run=client -o yaml \
               | ${KUBE} apply -f -
 
+            ${KUBE} -n services delete serviceaccount default --ignore-not-found=true
+
             "${HELM}" upgrade --install core "${KUBE_DIR}/charts/core" \
               -n services \
               -f "${KUBE_DIR}/charts/core/values.yaml" \
