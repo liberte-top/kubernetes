@@ -48,11 +48,12 @@ jobs:
         env:
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GHCR_USERNAME,GHCR_TOKEN
+          envs: GHCR_USERNAME,GHCR_TOKEN,REDIS_PASSWORD
           script: |
             set -euo pipefail
             KUBECTL=/usr/local/bin/kubectl
@@ -68,6 +69,14 @@ jobs:
               --docker-server=ghcr.io \
               --docker-username="${GHCR_USERNAME}" \
               --docker-password="${GHCR_TOKEN}" \
+              --dry-run=client -o yaml \
+              | ${KUBE} apply -f -
+            ${KUBE} -n middleware create secret generic redis-auth \
+              --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
+              --dry-run=client -o yaml \
+              | ${KUBE} apply -f -
+            ${KUBE} -n services create secret generic clash-redis \
+              --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
               --dry-run=client -o yaml \
               | ${KUBE} apply -f -
             ${KUBE} apply -k ${KUBE_DIR}/bootstrap

@@ -124,16 +124,10 @@ EOF
 ```
 
 ## Redis (middleware)
-Create Redis auth secret (used by Redis deployment and clash service):
-```sh
-REDIS_PASSWORD="<set-strong-password>"
-kubectl -n middleware create secret generic redis-auth \
-  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n services create secret generic clash-redis \
-  --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+Set `REDIS_PASSWORD` in the GitHub Actions environment secrets (prod).
+The `apply` workflow will create/update:
+- `middleware/redis-auth`
+- `services/clash-redis`
 
 ## Kubeconfig for Deploy User (namespaced)
 ```sh
@@ -213,6 +207,7 @@ scp -i /path/to/private_key -o StrictHostKeyChecking=no -r kubernetes \
 - `SSH_USER` = `deployer`
 - `SSH_PRIVATE_KEY` = private key content
 - `GHCR_TOKEN` = PAT with `write:packages`
+- `REDIS_PASSWORD` = Redis password (GitHub Environment Secret)
 
 ## Run Workflow
 - `apply` (manual) to sync manifests + RBAC + registry secret
@@ -231,10 +226,6 @@ curl -k https://clash.liberte.top/healthz
 - Store subscriptions at `services/clash-api/data/subscription/*.yml`.
 - `TOKEN_TTL_SECONDS` controls token lifetime (default 600).
 - `DATA_DIR` overrides data directory path (default `services/clash-api/data`).
-
-## Encrypted Config (SOPS)
-- `services/clash-api/data/proxies/*.yml` are encrypted with SOPS (age).
-- Decrypt: `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -d <file>`
 
 ## Notes
 - Deployment uses `hostNetwork: true`, so set Deployment strategy to `Recreate` to avoid port conflicts.
