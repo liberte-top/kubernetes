@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-web
-  namespace: app
+  name: auth-api
+  namespace: services
 spec:
   replicas: 2
   strategy:
@@ -12,16 +12,16 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      app: auth-web
+      app: auth-api
   template:
     metadata:
       labels:
-        app: auth-web
+        app: auth-api
     spec:
       imagePullSecrets:
         - name: ghcr-pull
       containers:
-        - name: auth-web
+        - name: auth-api
           image: nginx:alpine
           imagePullPolicy: Always
           command:

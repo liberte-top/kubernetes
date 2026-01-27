@@ -8,7 +8,7 @@ required by this repository.
 - Ports 80/443 are open.
 - Domain `*.liberte.top` points to the server public IP.
 - TLS is handled by cert-manager via ingress-nginx.
-- Redis is used for token storage (infra namespace).
+- Redis is used for token storage (middleware namespace).
 
 ## Base Packages
 ```sh
@@ -60,7 +60,7 @@ ufw status verbose
 Note: mosh requires an interactive TTY and working bidirectional UDP. In CI or other non-interactive shells, mosh may fail even if the server is configured correctly.
 
 ## Ingress (ingress-nginx + cert-manager)
-Apply ingress-nginx, cert-manager, and app ingress:
+Apply ingress-nginx, cert-manager, and services ingress:
 ```sh
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
 kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=180s
@@ -70,7 +70,7 @@ kubectl -n cert-manager rollout status deploy/cert-manager --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
 
-kubectl apply -k kubernetes/ingress
+kubectl apply -k kubernetes
 ```
 
 Ensure the ingress controller Service is a LoadBalancer (ServiceLB will bind to the node IP):
@@ -81,21 +81,21 @@ kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
 
 ## Kubernetes Namespace + RBAC
 ```sh
-kubectl get ns app >/dev/null 2>&1 || kubectl create ns app
-kubectl get ns infra >/dev/null 2>&1 || kubectl create ns infra
+kubectl get ns services >/dev/null 2>&1 || kubectl create ns services
+kubectl get ns middleware >/dev/null 2>&1 || kubectl create ns middleware
 
 cat <<"EOF" | kubectl apply -f -
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: gha-deployer
-  namespace: app
+  namespace: services
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: gha-deployer
-  namespace: app
+  namespace: services
 rules:
   - apiGroups: ["", "apps", "networking.k8s.io"]
     resources:
@@ -111,11 +111,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: gha-deployer
-  namespace: app
+  namespace: services
 subjects:
   - kind: ServiceAccount
     name: gha-deployer
-    namespace: app
+    namespace: services
 roleRef:
   kind: Role
   name: gha-deployer
@@ -123,21 +123,21 @@ roleRef:
 EOF
 ```
 
-## Redis (infra)
-Create Redis auth secret (used by Redis deployment and clash app):
+## Redis (middleware)
+Create Redis auth secret (used by Redis deployment and clash service):
 ```sh
 REDIS_PASSWORD="<set-strong-password>"
-kubectl -n infra create secret generic redis-auth \
+kubectl -n middleware create secret generic redis-auth \
   --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n app create secret generic clash-redis \
+kubectl -n services create secret generic clash-redis \
   --from-literal=REDIS_PASSWORD="$REDIS_PASSWORD" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 ## Kubeconfig for Deploy User (namespaced)
 ```sh
-TOKEN=$(kubectl -n app create token gha-deployer --duration=8760h 2>/dev/null || kubectl -n app create token gha-deployer)
+TOKEN=$(kubectl -n services create token gha-deployer --duration=8760h 2>/dev/null || kubectl -n services create token gha-deployer)
 CA=$(grep "certificate-authority-data:" /etc/rancher/k3s/k3s.yaml | awk "{print \\$2}")
 cat > /root/gha-kubeconfig <<EOF
 apiVersion: v1
@@ -152,12 +152,12 @@ users:
   user:
     token: ${TOKEN}
 contexts:
-- name: app
+- name: services
   context:
     cluster: k3s
     user: gha-deployer
-    namespace: app
-current-context: app
+    namespace: services
+current-context: services
 EOF
 chmod 600 /root/gha-kubeconfig
 ```
@@ -194,8 +194,8 @@ Create a PAT with `read:packages` and `write:packages` (for pushing), then:
 cat > /root/ghcr_token
 chmod 600 /root/ghcr_token
 
-kubectl -n app delete secret ghcr-pull >/dev/null 2>&1 || true
-kubectl -n app create secret docker-registry ghcr-pull \
+kubectl -n services delete secret ghcr-pull >/dev/null 2>&1 || true
+kubectl -n services create secret docker-registry ghcr-pull \
   --docker-server=ghcr.io \
   --docker-username=PerishCode \
   --docker-password="$(cat /root/ghcr_token)" \
@@ -219,7 +219,7 @@ scp -i /path/to/private_key -o StrictHostKeyChecking=no -r kubernetes \
 - `service` (manual) to build/push image and set deployment image
 
 ## Notes on Apply
-- `apply` is the single entry point for infra + apps + ingress; no separate ingress workflow.
+- `apply` is the single entry point for middleware + services; no separate ingress workflow.
 
 ## Smoke Test
 ```sh

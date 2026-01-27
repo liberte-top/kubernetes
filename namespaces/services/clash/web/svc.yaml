@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-web
-  namespace: app
+  name: clash-web
+  namespace: services
 spec:
   selector:
-    app: auth-web
+    app: clash-web
   ports:
     - name: http
       port: 80

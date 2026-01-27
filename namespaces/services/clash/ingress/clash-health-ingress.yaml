@@ -1,12 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: clash-api
-  namespace: app
+  name: clash-health
+  namespace: services
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/auth-url: "https://auth.liberte.top/api/verify"
-    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-Id,X-User-Email,X-User-Roles"
 spec:
   ingressClassName: nginx
   tls:
@@ -17,7 +15,7 @@ spec:
     - host: clash.liberte.top
       http:
         paths:
-          - path: /api
+          - path: /api/v1/health
             pathType: Prefix
             backend:
               service:

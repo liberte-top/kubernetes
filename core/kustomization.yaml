@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - serviceaccount-default.yaml
+  - cluster-issuer.yaml

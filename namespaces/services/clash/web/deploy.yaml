@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-api
-  namespace: app
+  name: clash-web
+  namespace: services
 spec:
   replicas: 2
   strategy:
@@ -12,16 +12,16 @@ spec:
       maxSurge: 1
   selector:
     matchLabels:
-      app: auth-api
+      app: clash-web
   template:
     metadata:
       labels:
-        app: auth-api
+        app: clash-web
     spec:
       imagePullSecrets:
         - name: ghcr-pull
       containers:
-        - name: auth-api
+        - name: clash-web
           image: nginx:alpine
           imagePullPolicy: Always
           command:

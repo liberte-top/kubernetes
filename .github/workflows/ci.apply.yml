@@ -11,7 +11,7 @@ on:
 
 env:
   KUBE_DIR: /home/deployer/kubernetes
-  KUBE_NAMESPACE: app
+  KUBE_NAMESPACE: services
   KUBE_ADMIN_CONFIG: /home/deployer/.kube/admin.config
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
             if [ -d "${KUBE_DIR}/kubernetes" ]; then
               KUBE_DIR="${KUBE_DIR}/kubernetes"
             fi
-            KUBE_NAMESPACE=app
+            KUBE_NAMESPACE=services
             KUBE="${KUBECTL} --kubeconfig ${KUBECONFIG}"
             KUBE_N="${KUBE} -n ${KUBE_NAMESPACE}"
             ${KUBE_N} create secret docker-registry ghcr-pull \
@@ -70,6 +70,7 @@ jobs:
               --docker-password="${GHCR_TOKEN}" \
               --dry-run=client -o yaml \
               | ${KUBE} apply -f -
+            ${KUBE} apply -k ${KUBE_DIR}/bootstrap
             ${KUBE} diff -k ${KUBE_DIR} || true
             ${KUBE} apply --dry-run=client -k ${KUBE_DIR}
             ${KUBE} apply --dry-run=server -k ${KUBE_DIR}
@@ -85,7 +86,7 @@ jobs:
             set -euo pipefail
             KUBECTL=/usr/local/bin/kubectl
             KUBECONFIG=/home/deployer/.kube/admin.config
-            KUBE_NAMESPACE=app
+            KUBE_NAMESPACE=services
             KUBE="${KUBECTL} --kubeconfig ${KUBECONFIG}"
             KUBE_N="${KUBE} -n ${KUBE_NAMESPACE}"
             for deploy in clash-api clash-web auth-api auth-web; do

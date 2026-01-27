@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: clash-api
-  namespace: app
+  namespace: services
 spec:
   replicas: 2
   strategy:
