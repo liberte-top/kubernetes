@@ -2,6 +2,12 @@ name: kubernetes
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub environment name"
+        type: string
+        required: false
+        default: "prod"
 
 env:
   KUBE_DIR: /home/deployer/kubernetes
@@ -11,7 +17,7 @@ env:
 jobs:
   apply-kubernetes:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: ${{ inputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
