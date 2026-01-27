@@ -4,4 +4,4 @@ metadata:
   name: auth-web-config
   namespace: services
 data:
-  PORT: "6666"
+  PORT: "8888"

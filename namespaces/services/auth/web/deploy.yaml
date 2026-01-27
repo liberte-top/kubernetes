@@ -31,16 +31,16 @@ spec:
                   name: auth-web-config
                   key: PORT
           ports:
-            - containerPort: 6666
+            - containerPort: 8888
           readinessProbe:
             httpGet:
               path: /
-              port: 6666
+              port: 8888
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /
-              port: 6666
+              port: 8888
             initialDelaySeconds: 5
             periodSeconds: 10
