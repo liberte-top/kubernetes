@@ -218,6 +218,9 @@ scp -i /path/to/private_key -o StrictHostKeyChecking=no -r kubernetes \
 - `apply` (manual) to sync manifests + RBAC + registry secret
 - `service` (manual) to build/push image and set deployment image
 
+## Notes on Apply
+- `apply` is the single entry point for infra + apps + ingress; no separate ingress workflow.
+
 ## Smoke Test
 ```sh
 curl -k https://clash.liberte.top/healthz

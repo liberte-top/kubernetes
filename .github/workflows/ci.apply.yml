@@ -54,6 +54,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GHCR_USERNAME,GHCR_TOKEN
           script: |
+            set -euo pipefail
             KUBECTL=/usr/local/bin/kubectl
             KUBECONFIG=/home/deployer/.kube/admin.config
             KUBE_DIR=/home/deployer/kubernetes
@@ -69,6 +70,7 @@ jobs:
               --docker-password="${GHCR_TOKEN}" \
               --dry-run=client -o yaml \
               | ${KUBE} apply -f -
+            ${KUBE} diff -k ${KUBE_DIR} || true
             ${KUBE} apply --dry-run=client -k ${KUBE_DIR}
             ${KUBE} apply --dry-run=server -k ${KUBE_DIR}
             ${KUBE} apply -k ${KUBE_DIR}
