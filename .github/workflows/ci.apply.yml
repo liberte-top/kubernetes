@@ -1,4 +1,4 @@
-name: kubernetes
+name: apply
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ env:
   KUBE_ADMIN_CONFIG: /home/deployer/.kube/admin.config
 
 jobs:
-  apply-kubernetes:
+  apply:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:

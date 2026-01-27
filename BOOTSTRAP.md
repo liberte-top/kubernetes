@@ -215,7 +215,7 @@ scp -i /path/to/private_key -o StrictHostKeyChecking=no -r kubernetes \
 - `GHCR_TOKEN` = PAT with `write:packages`
 
 ## Run Workflow
-- `kubernetes` (manual) to sync manifests + RBAC + registry secret
+- `apply` (manual) to sync manifests + RBAC + registry secret
 - `service` (manual) to build/push image and set deployment image
 
 ## Smoke Test
