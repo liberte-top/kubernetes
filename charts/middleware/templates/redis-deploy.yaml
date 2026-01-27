@@ -19,10 +19,11 @@ spec:
         - name: {{ .Values.redis.name }}
           image: {{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
           imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
           args:
-{{- range .Values.redis.args }}
-            - {{ . | quote }}
-{{- end }}
+            - {{ .Values.redis.command | quote }}
           env:
             - name: REDIS_PASSWORD
               valueFrom:
