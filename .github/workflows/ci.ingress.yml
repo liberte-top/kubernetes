@@ -3,6 +3,11 @@ name: ingress
 on:
   workflow_dispatch:
 
+env:
+  KUBE_DIR: /home/deployer/kubernetes
+  KUBE_NAMESPACE: app
+  KUBE_ADMIN_CONFIG: /home/deployer/.kube/admin.config
+
 jobs:
   deploy-ingress:
     runs-on: ubuntu-latest
@@ -10,75 +15,105 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Prepare remote kubernetes directory
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          version: latest
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            KUBE_DIR=/home/deployer/kubernetes
+            rm -rf "${KUBE_DIR}"
+            install -d -m 0755 "${KUBE_DIR}"
 
-      - name: Connect Tailscale
-        uses: tailscale/github-action@v4
+      - name: Upload kubernetes manifests
+        uses: appleboy/scp-action@v0.1.7
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Write kubeconfig
-        env:
-          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
-        run: |
-          set -euo pipefail
-          install -d -m 0700 "$HOME/.kube"
-          echo "$KUBECONFIG_B64" | base64 -d > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
-          for i in $(seq 1 10); do
-            if kubectl cluster-info >/dev/null 2>&1; then
-              break
-            fi
-            sleep 3
-          done
-          kubectl cluster-info
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "/home/deployer/kubernetes"
+          overwrite: true
 
       - name: Install ingress-nginx
-        run: |
-          set -euo pipefail
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
-          kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=180s
-          kubectl -n ingress-nginx patch svc ingress-nginx-controller -p '{"spec":{"type":"LoadBalancer"}}'
-          for i in $(seq 1 60); do
-            ip=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-            if [ -n "${ip}" ]; then
-              break
-            fi
-            sleep 2
-          done
-          kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            KUBECTL=/usr/local/bin/kubectl
+            KUBECONFIG=/home/deployer/.kube/admin.config
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=180s
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ingress-nginx patch svc ingress-nginx-controller -p '{"spec":{"type":"LoadBalancer"}}'
+            for i in $(seq 1 60); do
+              ip=$(${KUBECTL} --kubeconfig ${KUBECONFIG} -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+              if [ -n "${ip}" ]; then
+                break
+              fi
+              sleep 2
+            done
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ingress-nginx get svc ingress-nginx-controller -o wide
 
       - name: Install cert-manager
-        run: |
-          set -euo pipefail
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-          kubectl -n cert-manager rollout status deploy/cert-manager --timeout=180s
-          kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
-          kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            KUBECTL=/usr/local/bin/kubectl
+            KUBECONFIG=/home/deployer/.kube/admin.config
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n cert-manager rollout status deploy/cert-manager --timeout=180s
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
 
       - name: Apply ingress manifests
-        run: |
-          set -euo pipefail
-          kubectl -n app delete ingress clash --ignore-not-found
-          kubectl apply -k core
-          kubectl apply -k ingress
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            KUBECTL=/usr/local/bin/kubectl
+            KUBECONFIG=/home/deployer/.kube/admin.config
+            KUBE_DIR=/home/deployer/kubernetes
+            if [ -d "${KUBE_DIR}/kubernetes" ]; then
+              KUBE_DIR="${KUBE_DIR}/kubernetes"
+            fi
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n app delete ingress clash --ignore-not-found
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/core
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/ingress
 
       - name: Remove legacy caddy
-        run: |
-          set -euo pipefail
-          KUBE_NAMESPACE=app
-          kubectl -n ${KUBE_NAMESPACE} delete deploy/caddy svc/caddy configmap/caddy-config secret/caddy-e2e --ignore-not-found
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            KUBECTL=/usr/local/bin/kubectl
+            KUBECONFIG=/home/deployer/.kube/admin.config
+            KUBE_NAMESPACE=app
+            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} delete deploy/caddy svc/caddy configmap/caddy-config secret/caddy-e2e --ignore-not-found
 
       - name: Check clash ingress
-        run: |
-          set -euo pipefail
-          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://clash.liberte.top/api/v1/health)
-          if [ "${code}" != "200" ]; then
-            echo "unexpected status ${code}"
-            exit 1
-          fi
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://clash.liberte.top/api/v1/health)
+            if [ "${code}" != "200" ]; then
+              echo "unexpected status ${code}"
+              exit 1
+            fi
