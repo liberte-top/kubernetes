@@ -2,6 +2,12 @@ name: ingress
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub environment name"
+        type: string
+        required: false
+        default: "prod"
 
 env:
   KUBE_DIR: /home/deployer/kubernetes
@@ -11,6 +17,7 @@ env:
 jobs:
   deploy-ingress:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
