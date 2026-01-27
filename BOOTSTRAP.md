@@ -1,14 +1,14 @@
 # BOOTSTRAP.md
 
-This document captures the cold-start steps for provisioning the server environment
-required by this repository.
+This document captures cold-start steps and ongoing deploy mechanics for the
+liberte.top Kubernetes stack (now fully Helm-based).
 
 ## Assumptions
 - Target host is Debian 12 (bookworm) with root access.
 - Ports 80/443 are open.
 - Domain `*.liberte.top` points to the server public IP.
 - TLS is handled by cert-manager via ingress-nginx.
-- Redis is used for token storage (middleware namespace).
+- The deploy user is `deployer` with SSH access.
 
 ## Base Packages
 ```sh
@@ -27,17 +27,15 @@ systemctl is-active k3s
 kubectl get nodes -o wide
 ```
 
-Note: ServiceLB must be enabled for single-IP LoadBalancer usage.
-
 ## Firewall (ufw)
-UFW is optional. If you enable it, keep forwarding enabled for k3s and allow only required public ports.
+UFW is optional. If enabled, allow only required public ports.
 
 Enable forwarding for k3s:
 ```sh
 sed -i 's/^DEFAULT_FORWARD_POLICY=.*/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
 ```
 
-Baseline rules (lock down inbound, keep SSH/HTTP/HTTPS):
+Baseline rules:
 ```sh
 ufw default deny incoming
 ufw default allow outgoing
@@ -46,21 +44,14 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ```
 
-Optional: mosh (use a tight UDP range; replace <CIDR> to restrict by source):
-```sh
-ufw allow proto udp from <CIDR> to any port 60000:60020
-```
-
-Enable and verify:
+Enable:
 ```sh
 ufw enable
 ufw status verbose
 ```
 
-Note: mosh requires an interactive TTY and working bidirectional UDP. In CI or other non-interactive shells, mosh may fail even if the server is configured correctly.
-
-## Ingress (ingress-nginx + cert-manager)
-Apply ingress-nginx, cert-manager, and services ingress:
+## Ingress + TLS
+Install ingress-nginx and cert-manager:
 ```sh
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
 kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=180s
@@ -69,91 +60,12 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 kubectl -n cert-manager rollout status deploy/cert-manager --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
 kubectl -n cert-manager rollout status deploy/cert-manager-cainjector --timeout=180s
-
-kubectl apply -k kubernetes
 ```
 
-Ensure the ingress controller Service is a LoadBalancer (ServiceLB will bind to the node IP):
+Ensure the ingress controller Service is a LoadBalancer (ServiceLB binds to node IP):
 ```sh
 kubectl -n ingress-nginx patch svc ingress-nginx-controller -p '{"spec":{"type":"LoadBalancer"}}'
 kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
-```
-
-## Kubernetes Namespace + RBAC
-```sh
-kubectl get ns services >/dev/null 2>&1 || kubectl create ns services
-kubectl get ns middleware >/dev/null 2>&1 || kubectl create ns middleware
-
-cat <<"EOF" | kubectl apply -f -
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: gha-deployer
-  namespace: services
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: gha-deployer
-  namespace: services
-rules:
-  - apiGroups: ["", "apps", "networking.k8s.io"]
-    resources:
-      - deployments
-      - services
-      - configmaps
-      - secrets
-      - pods
-      - ingresses
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: gha-deployer
-  namespace: services
-subjects:
-  - kind: ServiceAccount
-    name: gha-deployer
-    namespace: services
-roleRef:
-  kind: Role
-  name: gha-deployer
-  apiGroup: rbac.authorization.k8s.io
-EOF
-```
-
-## Redis (middleware)
-Set `REDIS_PASSWORD` in the GitHub Actions environment secrets (prod).
-The `apply` workflow will create/update:
-- `middleware/redis-auth`
-- `services/clash-redis`
-
-## Kubeconfig for Deploy User (namespaced)
-```sh
-TOKEN=$(kubectl -n services create token gha-deployer --duration=8760h 2>/dev/null || kubectl -n services create token gha-deployer)
-CA=$(grep "certificate-authority-data:" /etc/rancher/k3s/k3s.yaml | awk "{print \\$2}")
-cat > /root/gha-kubeconfig <<EOF
-apiVersion: v1
-kind: Config
-clusters:
-- name: k3s
-  cluster:
-    certificate-authority-data: ${CA}
-    server: https://127.0.0.1:6443
-users:
-- name: gha-deployer
-  user:
-    token: ${TOKEN}
-contexts:
-- name: services
-  context:
-    cluster: k3s
-    user: gha-deployer
-    namespace: services
-current-context: services
-EOF
-chmod 600 /root/gha-kubeconfig
 ```
 
 ## Create Deploy User
@@ -161,12 +73,13 @@ chmod 600 /root/gha-kubeconfig
 id -u deployer >/dev/null 2>&1 || useradd -m -s /bin/bash deployer
 install -d -m 700 -o deployer -g deployer /home/deployer/.ssh
 install -d -m 700 -o deployer -g deployer /home/deployer/.kube
-cp /root/gha-kubeconfig /home/deployer/.kube/config
-chown deployer:deployer /home/deployer/.kube/config
-chmod 600 /home/deployer/.kube/config
 ```
 
-## Admin kubeconfig for CI (required for Namespace/RBAC apply)
+## Kubeconfig for Deploy User (admin)
+The `apply` workflow needs admin kubeconfig at:
+- `/home/deployer/.kube/admin.config`
+
+On k3s, copy the admin config:
 ```sh
 install -m 600 -o deployer -g deployer /etc/rancher/k3s/k3s.yaml /home/deployer/.kube/admin.config
 ```
@@ -176,59 +89,48 @@ install -m 600 -o deployer -g deployer /etc/rancher/k3s/k3s.yaml /home/deployer/
 - Example key path used in this repo:
   - private: `/home/fire/.ssh/liberte_gha_deploy`
   - public: `/home/fire/.ssh/liberte_gha_deploy.pub`
-### SSH Hardening (Recommended)
-- Restrict the deploy key to `deployer` only; keep it separate from personal keys.
-- Consider `from="<allowed-ip>"` restrictions in `authorized_keys` if runner IP is stable.
-- Rotate the deploy key periodically and revoke old keys.
-- Keep `AllowUsers deployer` and disable password auth on SSH daemon.
 
-## GHCR Pull Secret
-Create a PAT with `read:packages` and `write:packages` (for pushing), then:
+## GitHub Actions Secrets (Org)
+These are required by `kubernetes/.github/workflows/ci.apply.yml`:
+- `PROD_SSH_HOST` = server public IP
+- `PROD_SSH_USER` = `deployer`
+- `PROD_SSH_PRIVATE_KEY` = private key content
+- `PROD_REDIS_PASSWORD` = Redis password
+
+## Helm + Apply Flow
+`ci.apply` performs all deployment steps and is the single entry point for cluster sync:
+1) Upload manifests (`kubernetes/`)
+2) Install Helm (if missing)
+3) Helm releases (order matters):
+   - `bootstrap` (namespaces)
+   - create secrets (`redis-auth`, `clash-redis`)
+   - `core` (cluster-issuer + RBAC + default SA)
+   - `auth`, `middleware`, `clash`
+4) Rollout checks for auth/clash and redis
+
+## Manual Helm (Server)
+If you need to run manually on the server:
 ```sh
-cat > /root/ghcr_token
-chmod 600 /root/ghcr_token
-
-kubectl -n services delete secret ghcr-pull >/dev/null 2>&1 || true
-kubectl -n services create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io \
-  --docker-username=PerishCode \
-  --docker-password="$(cat /root/ghcr_token)" \
-  --docker-email=PerishCode@users.noreply.github.com
+cd /home/deployer/kubernetes
+/home/deployer/.local/bin/helm upgrade --install bootstrap ./charts/bootstrap -n default -f ./charts/bootstrap/values.yaml --atomic --timeout 120s
+/home/deployer/.local/bin/helm upgrade --install core ./charts/core -n services -f ./charts/core/values.yaml --atomic --timeout 120s
+/home/deployer/.local/bin/helm upgrade --install auth ./charts/auth -n services -f ./charts/auth/values.yaml -f ./charts/auth/values-prod.yaml --atomic --timeout 120s
+/home/deployer/.local/bin/helm upgrade --install middleware ./charts/middleware -n middleware -f ./charts/middleware/values.yaml -f ./charts/middleware/values-prod.yaml --atomic --timeout 120s
+/home/deployer/.local/bin/helm upgrade --install clash ./charts/clash -n services -f ./charts/clash/values.yaml -f ./charts/clash/values-prod.yaml --atomic --timeout 120s
 ```
 
-## Deploy Manifest Sync
+## Redis Secrets
+`ci.apply` auto-creates:
+- `middleware/redis-auth` (REDIS_PASSWORD)
+- `services/clash-redis` (REDIS_PASSWORD)
+
+## Smoke Tests
 ```sh
-scp -i /path/to/private_key -o StrictHostKeyChecking=no -r kubernetes \
-  deployer@<server>:/home/deployer/
+curl -k https://auth.liberte.top
+curl -k https://clash.liberte.top
 ```
-
-## GitHub Actions Secrets (Repo)
-- `SSH_HOST` = server public IP
-- `SSH_USER` = `deployer`
-- `SSH_PRIVATE_KEY` = private key content
-- `GHCR_TOKEN` = PAT with `write:packages`
-- `REDIS_PASSWORD` = Redis password (GitHub Environment Secret)
-
-## Run Workflow
-- `apply` (manual) to sync manifests + RBAC + registry secret
-- `service` (manual) to build/push image and set deployment image
-
-## Notes on Apply
-- `apply` is the single entry point for middleware + services; no separate ingress workflow.
-
-## Smoke Test
-```sh
-curl -k https://clash.liberte.top/healthz
-```
-
-## Clash Data Files
-- Store rule providers at `services/clash-api/data/rule-providers/*.yml`.
-- Store subscriptions at `services/clash-api/data/subscription/*.yml`.
-- `TOKEN_TTL_SECONDS` controls token lifetime (default 600).
-- `DATA_DIR` overrides data directory path (default `services/clash-api/data`).
 
 ## Notes
-- Deployment uses `hostNetwork: true`, so set Deployment strategy to `Recreate` to avoid port conflicts.
-- Ensure `/home/deployer/kubernetes` is owned by `deployer`, otherwise scp will fail:
-  - `sudo chown -R deployer:deployer /home/deployer/kubernetes`
-- Maintenance playbook lives in `MAINTENANCE.md` (manual or systemd-based cleanup).
+- `ClusterIssuer` is managed by Helm `core` release.
+- Namespaces are managed by Helm `bootstrap` release.
+- If `ci.apply` fails before Helm, verify SSH + kubeconfig on server.

@@ -1,0 +1,34 @@
+clusterIssuer:
+  name: letsencrypt-prod
+  email: admin@liberte.top
+  server: https://acme-v02.api.letsencrypt.org/directory
+  privateKeySecretName: letsencrypt-prod
+  ingressClass: nginx
+
+ghaDeployer:
+  name: gha-deployer
+  namespace: services
+  rules:
+    apiGroups:
+      - ""
+      - apps
+      - networking.k8s.io
+    resources:
+      - deployments
+      - services
+      - configmaps
+      - secrets
+      - pods
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+
+defaultServiceAccount:
+  namespace: services
+  name: default

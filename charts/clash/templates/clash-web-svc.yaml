@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.clashWeb.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.clashWeb.name }}
+spec:
+  selector:
+    app: {{ .Values.clashWeb.name }}
+  ports:
+    - port: {{ .Values.clashWeb.service.port }}
+      targetPort: {{ .Values.clashWeb.service.targetPort }}

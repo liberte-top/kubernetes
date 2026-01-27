@@ -18,8 +18,6 @@ spec:
       labels:
         app: auth-api
     spec:
-      imagePullSecrets:
-        - name: ghcr-pull
       containers:
         - name: auth-api
           image: ghcr.io/liberte-top/auth-api:latest
