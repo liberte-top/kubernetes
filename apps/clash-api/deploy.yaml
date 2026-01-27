@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clash-api
+  namespace: app
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: clash-api
+  template:
+    metadata:
+      labels:
+        app: clash-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: clash-api
+          image: ghcr.io/perishcode/liberte.top/clash:latest
+          imagePullPolicy: Always
+          env:
+            - name: BASIC_AUTH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: clash-basic-auth
+                  key: BASIC_AUTH_USER
+            - name: BASIC_AUTH_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: clash-basic-auth
+                  key: BASIC_AUTH_PASS
+            - name: TOKEN_TTL_SECONDS
+              value: "600"
+            - name: REDIS_HOST
+              value: "redis.infra.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_DB
+              value: "0"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clash-redis
+                  key: REDIS_PASSWORD
+            - name: DATA_DIR
+              value: "/app/services/clash-api/data"
+          ports:
+            - containerPort: 3100
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3100
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3100
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

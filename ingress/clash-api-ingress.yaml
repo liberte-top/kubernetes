@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clash-api
+  namespace: app
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/auth-url: "https://auth.liberte.top/api/verify"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-Id,X-User-Email,X-User-Roles"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - clash.liberte.top
+      secretName: clash-tls
+  rules:
+    - host: clash.liberte.top
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: clash-api
+                port:
+                  number: 3100
