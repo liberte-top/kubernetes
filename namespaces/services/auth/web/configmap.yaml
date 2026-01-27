@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-web-config
+  namespace: services
+data:
+  PORT: "6666"
