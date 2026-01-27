@@ -3,11 +3,6 @@ name: kubernetes
 on:
   workflow_dispatch:
 
-env:
-  KUBE_DIR: /home/deployer/kubernetes
-  KUBE_NAMESPACE: app
-  KUBE_ADMIN_CONFIG: /home/deployer/.kube/admin.config
-
 jobs:
   apply-kubernetes:
     runs-on: ubuntu-latest
@@ -15,82 +10,71 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare remote kubernetes directory
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            KUBE_DIR=/home/deployer/kubernetes
-            rm -rf "${KUBE_DIR}"
-            install -d -m 0755 "${KUBE_DIR}"
+          version: latest
 
-      - name: Upload kubernetes manifests
-        uses: appleboy/scp-action@v0.1.7
+      - name: Connect Tailscale
+        uses: tailscale/github-action@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/home/deployer/kubernetes"
-          overwrite: true
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Write kubeconfig
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$HOME/.kube"
+          echo "$KUBECONFIG_B64" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+          for i in $(seq 1 10); do
+            if kubectl cluster-info >/dev/null 2>&1; then
+              break
+            fi
+            sleep 3
+          done
+          kubectl cluster-info
 
       - name: Apply manifests and ensure registry secret
-        uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GHCR_USERNAME,GHCR_TOKEN
-          script: |
-            KUBECTL=/usr/local/bin/kubectl
-            KUBECONFIG=/home/deployer/.kube/admin.config
-            KUBE_DIR=/home/deployer/kubernetes
-            if [ -d "${KUBE_DIR}/kubernetes" ]; then
-              KUBE_DIR="${KUBE_DIR}/kubernetes"
-            fi
-            KUBE_NAMESPACE=app
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/core
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/core
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/core
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/infra
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/infra
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/infra
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} create secret docker-registry ghcr-pull \
-              --docker-server=ghcr.io \
-              --docker-username="${GHCR_USERNAME}" \
-              --docker-password="${GHCR_TOKEN}" \
-              --dry-run=client -o yaml \
-              | ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -f -
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/apps/clash-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/apps/clash-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/apps/clash-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/apps/clash-web
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/apps/clash-web
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/apps/clash-web
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/apps/auth-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/apps/auth-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/apps/auth-api
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=client -k ${KUBE_DIR}/apps/auth-web
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply --dry-run=server -k ${KUBE_DIR}/apps/auth-web
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} apply -k ${KUBE_DIR}/apps/auth-web
+        run: |
+          set -euo pipefail
+          KUBE_NAMESPACE=app
+          kubectl apply --dry-run=client -k core
+          kubectl apply --dry-run=server -k core
+          kubectl apply -k core
+          kubectl apply --dry-run=client -k infra
+          kubectl apply --dry-run=server -k infra
+          kubectl apply -k infra
+          kubectl -n ${KUBE_NAMESPACE} create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="${GHCR_USERNAME}" \
+            --docker-password="${GHCR_TOKEN}" \
+            --dry-run=client -o yaml \
+            | kubectl apply -f -
+          kubectl apply --dry-run=client -k apps/clash-api
+          kubectl apply --dry-run=server -k apps/clash-api
+          kubectl apply -k apps/clash-api
+          kubectl apply --dry-run=client -k apps/clash-web
+          kubectl apply --dry-run=server -k apps/clash-web
+          kubectl apply -k apps/clash-web
+          kubectl apply --dry-run=client -k apps/auth-api
+          kubectl apply --dry-run=server -k apps/auth-api
+          kubectl apply -k apps/auth-api
+          kubectl apply --dry-run=client -k apps/auth-web
+          kubectl apply --dry-run=server -k apps/auth-web
+          kubectl apply -k apps/auth-web
 
       - name: E2E check (k8s)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -euo pipefail
-            KUBECTL=/usr/local/bin/kubectl
-            KUBECONFIG=/home/deployer/.kube/admin.config
-            KUBE_NAMESPACE=app
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} rollout status deploy/clash-api --timeout=60s
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} rollout status deploy/clash-web --timeout=60s
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} rollout status deploy/auth-api --timeout=60s
-            ${KUBECTL} --kubeconfig ${KUBECONFIG} -n ${KUBE_NAMESPACE} rollout status deploy/auth-web --timeout=60s
+        run: |
+          set -euo pipefail
+          KUBE_NAMESPACE=app
+          kubectl -n ${KUBE_NAMESPACE} rollout status deploy/clash-api --timeout=60s
+          kubectl -n ${KUBE_NAMESPACE} rollout status deploy/clash-web --timeout=60s
+          kubectl -n ${KUBE_NAMESPACE} rollout status deploy/auth-api --timeout=60s
+          kubectl -n ${KUBE_NAMESPACE} rollout status deploy/auth-web --timeout=60s
