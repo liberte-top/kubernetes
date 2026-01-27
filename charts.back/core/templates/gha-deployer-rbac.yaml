@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.ghaDeployer.name }}
+  namespace: {{ .Values.ghaDeployer.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.ghaDeployer.name }}
+  namespace: {{ .Values.ghaDeployer.namespace }}
+rules:
+  - apiGroups:
+{{- range .Values.ghaDeployer.rules.apiGroups }}
+      - {{ . | quote }}
+{{- end }}
+    resources:
+{{- range .Values.ghaDeployer.rules.resources }}
+      - {{ . }}
+{{- end }}
+    verbs:
+{{- range .Values.ghaDeployer.rules.verbs }}
+      - {{ . }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.ghaDeployer.name }}
+  namespace: {{ .Values.ghaDeployer.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Values.ghaDeployer.name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.ghaDeployer.name }}
+    namespace: {{ .Values.ghaDeployer.namespace }}

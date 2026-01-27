@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.authWeb.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.authWeb.name }}
+spec:
+  replicas: {{ .Values.authWeb.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.authWeb.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.authWeb.name }}
+    spec:
+      containers:
+        - name: {{ .Values.authWeb.name }}
+          image: {{ .Values.authWeb.image.repository }}:{{ .Values.authWeb.image.tag }}
+          imagePullPolicy: {{ .Values.authWeb.image.pullPolicy }}
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.authWeb.name }}-config
+                  key: PORT
+          ports:
+            - containerPort: {{ .Values.authWeb.port }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.authWeb.probes.readiness.path }}
+              port: {{ .Values.authWeb.port }}
+            initialDelaySeconds: {{ .Values.authWeb.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.authWeb.probes.readiness.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.authWeb.probes.liveness.path }}
+              port: {{ .Values.authWeb.port }}
+            initialDelaySeconds: {{ .Values.authWeb.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.authWeb.probes.liveness.periodSeconds }}

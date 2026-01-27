@@ -1,0 +1,3 @@
+redis:
+  image:
+    tag: 7.2-alpine

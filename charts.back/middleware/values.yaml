@@ -1,0 +1,23 @@
+redis:
+  name: redis
+  replicas: 1
+  image:
+    repository: redis
+    tag: 7.2-alpine
+    pullPolicy: IfNotPresent
+  port: 6379
+  env:
+    passwordSecret:
+      name: redis-auth
+      key: REDIS_PASSWORD
+  command: 'exec redis-server --save "" --appendonly no --requirepass "$REDIS_PASSWORD"'
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  service:
+    port: 6379
+    targetPort: 6379

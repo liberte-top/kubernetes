@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.authWeb.name }}-config
+  namespace: {{ .Release.Namespace }}
+data:
+  PORT: "{{ .Values.authWeb.env.PORT }}"
