@@ -28,7 +28,3 @@ ghaDeployer:
       - update
       - patch
       - delete
-
-defaultServiceAccount:
-  namespace: services
-  name: default
