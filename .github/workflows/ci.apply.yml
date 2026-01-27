@@ -82,6 +82,15 @@ jobs:
               -f "${KUBE_DIR}/charts/bootstrap/values.yaml" \
               --atomic --timeout 120s
 
+            "${HELM}" repo add jetstack https://charts.jetstack.io >/dev/null 2>&1 || true
+            "${HELM}" repo update >/dev/null 2>&1
+            "${HELM}" dependency update "${KUBE_DIR}/charts/cert-manager"
+            "${HELM}" upgrade --install cert-manager "${KUBE_DIR}/charts/cert-manager" \
+              -n cert-manager \
+              --create-namespace \
+              -f "${KUBE_DIR}/charts/cert-manager/values.yaml" \
+              --atomic --timeout 120s
+
             ${KUBE} -n middleware create secret generic redis-auth \
               --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
               --dry-run=client -o yaml \
@@ -96,16 +105,16 @@ jobs:
               -f "${KUBE_DIR}/charts/core/values.yaml" \
               --atomic --timeout 120s
 
-            "${HELM}" upgrade --install auth "${KUBE_DIR}/charts/auth" \
-              -n services \
-              -f "${KUBE_DIR}/charts/auth/values.yaml" \
-              -f "${KUBE_DIR}/charts/auth/values-prod.yaml" \
-              --atomic --timeout 120s
-
             "${HELM}" upgrade --install middleware "${KUBE_DIR}/charts/middleware" \
               -n middleware \
               -f "${KUBE_DIR}/charts/middleware/values.yaml" \
               -f "${KUBE_DIR}/charts/middleware/values-prod.yaml" \
+              --atomic --timeout 120s
+
+            "${HELM}" upgrade --install auth "${KUBE_DIR}/charts/auth" \
+              -n services \
+              -f "${KUBE_DIR}/charts/auth/values.yaml" \
+              -f "${KUBE_DIR}/charts/auth/values-prod.yaml" \
               --atomic --timeout 120s
 
             "${HELM}" upgrade --install clash "${KUBE_DIR}/charts/clash" \
