@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - core
   - infra
-  - apps/clash-api
-  - apps/clash-web
-  - apps/auth-api
-  - apps/auth-web
+  - apps/clash/api
+  - apps/clash/web
+  - apps/auth/api
+  - apps/auth/web
