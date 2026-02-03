@@ -3,10 +3,6 @@ name: apply
 on:
   workflow_dispatch: {}
 
-env:
-  SSH_HOST: ${{ secrets.SSH_HOST }}
-  SSH_USER: ${{ secrets.SSH_USER }}
-
 jobs:
   apply:
     runs-on: ubuntu-latest
@@ -14,23 +10,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Upload smoke manifest
+        uses: appleboy/scp-action@v0.1.7
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "smoke/smoke.yaml"
+          target: "/tmp"
+          overwrite: true
 
-      - name: Trust host key
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
-
-      - name: Apply smoke manifests
-        run: |
-          set -euo pipefail
-          cat smoke/smoke.yaml | ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f -"
+      - name: Apply smoke manifest
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            kubectl apply -f /tmp/smoke/smoke.yaml
 
       - name: Rollout check
-        run: |
-          set -euo pipefail
-          ssh "$SSH_USER@$SSH_HOST" "kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s"
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s
