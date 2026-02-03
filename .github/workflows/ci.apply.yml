@@ -25,6 +25,11 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
+      - name: Net check (nc)
+        run: |
+          set -euo pipefail
+          nc -vz -w 5 "$SSH_HOST" 22
+
       - name: SSH debug (verbose)
         run: |
           set -euo pipefail
