@@ -3,6 +3,10 @@ name: apply
 on:
   workflow_dispatch: {}
 
+env:
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_USER: ${{ secrets.SSH_USER }}
+
 jobs:
   apply:
     runs-on: ubuntu-latest
@@ -10,32 +14,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Upload smoke manifest
-        uses: appleboy/scp-action@v0.1.7
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "smoke/smoke.yaml"
-          target: "/tmp"
-          overwrite: true
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Trust host key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: SSH debug (verbose)
+        run: |
+          set -euo pipefail
+          ssh -vvv -o BatchMode=yes -o ConnectTimeout=10 "$SSH_USER@$SSH_HOST" 'echo hello'
+
+      - name: Upload smoke manifest (scp verbose)
+        run: |
+          set -euo pipefail
+          scp -v smoke/smoke.yaml "$SSH_USER@$SSH_HOST:/tmp/smoke.yaml"
 
       - name: Apply smoke manifest
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -euo pipefail
-            kubectl apply -f /tmp/smoke/smoke.yaml
+        run: |
+          set -euo pipefail
+          ssh -vvv "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/smoke.yaml"
 
       - name: Rollout check
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -euo pipefail
-            kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s
+        run: |
+          set -euo pipefail
+          ssh -vvv "$SSH_USER@$SSH_HOST" "kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s"
