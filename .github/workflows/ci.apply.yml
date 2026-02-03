@@ -1,142 +1,36 @@
 name: apply
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "GitHub environment name"
-        type: string
-        required: false
-        default: "prod"
+  workflow_dispatch: {}
 
 env:
-  KUBE_DIR: /home/deployer/kubernetes
-  KUBE_NAMESPACE: services
-  KUBE_ADMIN_CONFIG: /home/deployer/.kube/admin.config
+  SSH_HOST: ${{ secrets.SSH_HOST }}
+  SSH_USER: ${{ secrets.SSH_USER }}
 
 jobs:
   apply:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare remote kubernetes directory
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          script: |
-            KUBE_DIR=/home/deployer/kubernetes
-            rm -rf "${KUBE_DIR}"
-            install -d -m 0755 "${KUBE_DIR}"
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Upload kubernetes manifests
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/home/deployer/kubernetes"
-          overwrite: true
+      - name: Trust host key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Apply manifests and ensure secrets
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          REDIS_PASSWORD: ${{ secrets.PROD_REDIS_PASSWORD }}
-        with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          envs: REDIS_PASSWORD
-          script: |
-            set -euo pipefail
-            KUBECTL=/usr/local/bin/kubectl
-            KUBECONFIG=/home/deployer/.kube/admin.config
-            export KUBECONFIG
-            KUBE_DIR=/home/deployer/kubernetes
-            HELM_BIN=/home/deployer/.local/bin/helm
-            if [ -d "${KUBE_DIR}/kubernetes" ]; then
-              KUBE_DIR="${KUBE_DIR}/kubernetes"
-            fi
-            KUBE_NAMESPACE=services
-            KUBE="${KUBECTL} --kubeconfig ${KUBECONFIG}"
-            KUBE_N="${KUBE} -n ${KUBE_NAMESPACE}"
-            HELM="${HELM_BIN}"
-            if command -v helm >/dev/null 2>&1; then
-              HELM="$(command -v helm)"
-            else
-              mkdir -p /home/deployer/.local/bin
-              curl -fsSL https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz -o /tmp/helm.tgz
-              tar -xzf /tmp/helm.tgz -C /tmp
-              mv /tmp/linux-amd64/helm "${HELM_BIN}"
-              chmod +x "${HELM_BIN}"
-              export PATH="/home/deployer/.local/bin:${PATH}"
-            fi
-            
-            "${HELM}" upgrade --install bootstrap "${KUBE_DIR}/charts/bootstrap" \
-              -n default \
-              -f "${KUBE_DIR}/charts/bootstrap/values.yaml" \
-              --atomic --timeout 120s
+      - name: Apply smoke manifests
+        run: |
+          set -euo pipefail
+          cat smoke/smoke.yaml | ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f -"
 
-            "${HELM}" repo add jetstack https://charts.jetstack.io >/dev/null 2>&1 || true
-            "${HELM}" repo update >/dev/null 2>&1
-            "${HELM}" dependency update "${KUBE_DIR}/charts/cert-manager"
-            "${HELM}" upgrade --install cert-manager "${KUBE_DIR}/charts/cert-manager" \
-              -n cert-manager \
-              --create-namespace \
-              -f "${KUBE_DIR}/charts/cert-manager/values.yaml" \
-              --atomic --timeout 120s
-
-            ${KUBE} -n middleware create secret generic redis-auth \
-              --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
-              --dry-run=client -o yaml \
-              | ${KUBE} apply -f -
-            ${KUBE} -n services create secret generic clash-redis \
-              --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
-              --dry-run=client -o yaml \
-              | ${KUBE} apply -f -
-
-            "${HELM}" upgrade --install core "${KUBE_DIR}/charts/core" \
-              -n services \
-              -f "${KUBE_DIR}/charts/core/values.yaml" \
-              --atomic --timeout 120s
-
-            "${HELM}" upgrade --install middleware "${KUBE_DIR}/charts/middleware" \
-              -n middleware \
-              -f "${KUBE_DIR}/charts/middleware/values.yaml" \
-              -f "${KUBE_DIR}/charts/middleware/values-prod.yaml" \
-              --atomic --timeout 120s
-
-            "${HELM}" upgrade --install auth "${KUBE_DIR}/charts/auth" \
-              -n services \
-              -f "${KUBE_DIR}/charts/auth/values.yaml" \
-              -f "${KUBE_DIR}/charts/auth/values-prod.yaml" \
-              --atomic --timeout 120s
-
-            "${HELM}" upgrade --install clash "${KUBE_DIR}/charts/clash" \
-              -n services \
-              -f "${KUBE_DIR}/charts/clash/values.yaml" \
-              -f "${KUBE_DIR}/charts/clash/values-prod.yaml" \
-              --atomic --timeout 120s
-
-      - name: E2E check (k8s)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          script: |
-            set -euo pipefail
-            KUBECTL=/usr/local/bin/kubectl
-            KUBECONFIG=/home/deployer/.kube/admin.config
-            KUBE_NAMESPACE=services
-            KUBE="${KUBECTL} --kubeconfig ${KUBECONFIG}"
-            KUBE_N="${KUBE} -n ${KUBE_NAMESPACE}"
-            for deploy in clash-api clash-web auth-api auth-web; do
-              ${KUBE_N} rollout status deploy/${deploy} --timeout=60s
-            done
-            ${KUBE} -n middleware rollout status deploy/redis --timeout=60s
+      - name: Rollout check
+        run: |
+          set -euo pipefail
+          ssh "$SSH_USER@$SSH_HOST" "kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s"
