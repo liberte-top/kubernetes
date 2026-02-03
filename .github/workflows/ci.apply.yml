@@ -30,6 +30,7 @@ jobs:
           set -euo pipefail
           scp core/cluster-issuer.yaml "$SSH_USER@$SSH_HOST:/tmp/cluster-issuer.yaml"
           scp smoke/smoke.yaml "$SSH_USER@$SSH_HOST:/tmp/smoke.yaml"
+          scp service/auth/auth.yaml "$SSH_USER@$SSH_HOST:/tmp/auth.yaml"
 
       - name: Apply core manifest
         run: |
@@ -41,7 +42,13 @@ jobs:
           set -euo pipefail
           ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/smoke.yaml"
 
+      - name: Apply auth manifest
+        run: |
+          set -euo pipefail
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/auth.yaml"
+
       - name: Rollout check
         run: |
           set -euo pipefail
           ssh "$SSH_USER@$SSH_HOST" "kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl -n service rollout status deploy/auth-placeholder --timeout=60s"
