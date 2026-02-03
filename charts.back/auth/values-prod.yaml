@@ -1,7 +1,0 @@
-authApi:
-  image:
-    tag: latest
-
-authWeb:
-  image:
-    tag: latest

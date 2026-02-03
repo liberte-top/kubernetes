@@ -1,7 +1,0 @@
-clashApi:
-  image:
-    tag: alpine
-
-clashWeb:
-  image:
-    tag: alpine

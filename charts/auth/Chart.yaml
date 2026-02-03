@@ -1,6 +1,0 @@
-apiVersion: v2
-name: auth
-description: Auth services (auth-api + auth-web) and ingress
-type: application
-version: 0.1.0
-appVersion: "1.0"
