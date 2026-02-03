@@ -3,6 +3,16 @@ kind: Namespace
 metadata:
   name: smoke
 ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: smoke-redirect
+  namespace: smoke
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,3 +49,41 @@ spec:
       port: 80
       targetPort: 80
   type: ClusterIP
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: smoke-cert
+  namespace: smoke
+spec:
+  secretName: smoke-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-staging
+  dnsNames:
+    - smoke.liberte.top
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smoke-ingress
+  namespace: smoke
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: smoke-smoke-redirect@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: smoke.liberte.top
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smoke-nginx
+                port:
+                  number: 80
+  tls:
+    - secretName: smoke-tls
+      hosts:
+        - smoke.liberte.top

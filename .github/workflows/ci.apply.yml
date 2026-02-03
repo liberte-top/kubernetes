@@ -28,7 +28,13 @@ jobs:
       - name: Upload smoke manifest
         run: |
           set -euo pipefail
+          scp core/cluster-issuer.yaml "$SSH_USER@$SSH_HOST:/tmp/cluster-issuer.yaml"
           scp smoke/smoke.yaml "$SSH_USER@$SSH_HOST:/tmp/smoke.yaml"
+
+      - name: Apply core manifest
+        run: |
+          set -euo pipefail
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/cluster-issuer.yaml"
 
       - name: Apply smoke manifest
         run: |
