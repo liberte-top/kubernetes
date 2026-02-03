@@ -51,4 +51,5 @@ jobs:
         run: |
           set -euo pipefail
           ssh "$SSH_USER@$SSH_HOST" "kubectl -n smoke rollout status deploy/smoke-nginx --timeout=60s"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl -n service rollout status deploy/auth-placeholder --timeout=60s"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl -n service rollout status deploy/auth-api --timeout=60s"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl -n service rollout status deploy/auth-web --timeout=60s"
