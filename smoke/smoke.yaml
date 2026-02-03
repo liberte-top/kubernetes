@@ -70,7 +70,7 @@ spec:
   secretName: smoke-tls
   issuerRef:
     kind: ClusterIssuer
-    name: letsencrypt-staging
+    name: letsencrypt-prod
   dnsNames:
     - smoke.liberte.top
 ---
