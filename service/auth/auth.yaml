@@ -37,8 +37,7 @@ spec:
     spec:
       containers:
         - name: auth-api
-          image: ghcr.io/liberte-top/auth-api:latest
-          imagePullPolicy: Always
+          image: ghcr.io/liberte-top/auth-api
           ports:
             - containerPort: 3333
           readinessProbe:
@@ -92,8 +91,7 @@ spec:
     spec:
       containers:
         - name: auth-web
-          image: ghcr.io/liberte-top/auth-web:latest
-          imagePullPolicy: Always
+          image: ghcr.io/liberte-top/auth-web
           ports:
             - containerPort: 8888
           readinessProbe:
