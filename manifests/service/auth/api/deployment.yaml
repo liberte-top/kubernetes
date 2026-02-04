@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: auth-api
-          image: ghcr.io/liberte-top/auth-api:sha-10d8e5c
+          image: ghcr.io/liberte-top/auth-api:sha-39ea021
           imagePullPolicy: IfNotPresent
           env:
             - name: SPRING_MAIN_LAZY_INITIALIZATION
