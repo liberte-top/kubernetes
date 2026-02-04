@@ -3,6 +3,10 @@ name: apply
 on:
   workflow_dispatch: {}
 
+concurrency:
+  group: k8s-apply
+  cancel-in-progress: false
+
 env:
   SSH_HOST: ${{ secrets.SSH_HOST }}
   SSH_USER: ${{ secrets.SSH_USER }}
@@ -25,23 +29,38 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Upload manifests
+      - name: Upload manifests (rsync)
         run: |
           set -euo pipefail
-          scp core/cluster-issuer.yaml "$SSH_USER@$SSH_HOST:/tmp/cluster-issuer.yaml"
-          scp service/auth/ingress/ingress.yaml "$SSH_USER@$SSH_HOST:/tmp/auth-ingress.yaml"
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "install -d -m 0755 ${REMOTE_ROOT}"
+          rsync -az manifests/ "$SSH_USER@$SSH_HOST:${REMOTE_ROOT}/manifests/"
+
+      - name: Dry-run apply (core)
+        run: |
+          set -euo pipefail
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core --dry-run=server"
+
+      - name: Dry-run apply (full)
+        run: |
+          set -euo pipefail
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests --dry-run=server"
 
       - name: Apply core manifest
         run: |
           set -euo pipefail
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/cluster-issuer.yaml"
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core"
 
-      - name: Apply auth ingress manifest
+      - name: Apply full manifest
         run: |
           set -euo pipefail
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -f /tmp/auth-ingress.yaml"
-
-      - name: Rollout check
-        run: |
-          set -euo pipefail
-          ssh "$SSH_USER@$SSH_HOST" "kubectl -n service rollout status deploy/auth-api --timeout=60s"
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests"
