@@ -44,19 +44,19 @@ jobs:
           REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
           ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core --dry-run=server"
 
-      - name: Dry-run apply (full)
-        run: |
-          set -euo pipefail
-          RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests --dry-run=server"
-
       - name: Apply core manifest
         run: |
           set -euo pipefail
           RELEASE_SHA="${GITHUB_SHA}"
           REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
           ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core"
+
+      - name: Dry-run apply (full)
+        run: |
+          set -euo pipefail
+          RELEASE_SHA="${GITHUB_SHA}"
+          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests --dry-run=server"
 
       - name: Apply full manifest
         run: |
