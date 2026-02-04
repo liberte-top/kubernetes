@@ -30,11 +30,11 @@ spec:
               value: "true"
           resources:
             requests:
-              cpu: "500m"
-              memory: "256Mi"
+              cpu: "50m"
+              memory: "64Mi"
             limits:
-              cpu: "1500m"
-              memory: "512Mi"
+              cpu: "200m"
+              memory: "128Mi"
           ports:
             - containerPort: 3333
           readinessProbe:
