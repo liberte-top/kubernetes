@@ -27,14 +27,14 @@ spec:
     spec:
       containers:
         - name: auth-web
-          image: ghcr.io/liberte-top/auth-web:sha-0cf85f9
+          image: ghcr.io/liberte-top/auth-web:sha-46fccf7
           ports:
             - containerPort: 8888
           env:
             - name: NEXT_PUBLIC_ENV
               value: "prod"
             - name: NEXT_PUBLIC_GIT_SHA
-              value: "sha-0cf85f9"
+              value: "sha-46fccf7"
           readinessProbe:
             httpGet:
               path: /__health__
