@@ -25,6 +25,9 @@ spec:
         - name: auth-api
           image: ghcr.io/liberte-top/auth-api:latest
           imagePullPolicy: IfNotPresent
+          env:
+            - name: SPRING_MAIN_LAZY_INITIALIZATION
+              value: "true"
           resources:
             requests:
               cpu: "100m"
