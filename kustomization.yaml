@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - core/cluster-issuer.yaml
   - service/auth/ingress/ingress.yaml
+  - service/singbox/ingress/ingress.yaml
