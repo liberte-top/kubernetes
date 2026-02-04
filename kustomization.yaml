@@ -3,9 +3,4 @@ kind: Kustomization
 resources:
   - core/cluster-issuer.yaml
   - smoke/smoke.yaml
-  - service/auth/auth.yaml
-images:
-  - name: ghcr.io/liberte-top/auth-api
-    newTag: latest
-  - name: ghcr.io/liberte-top/auth-web
-    newTag: latest
+  - service/auth/ingress/ingress.yaml
