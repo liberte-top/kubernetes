@@ -35,7 +35,10 @@ jobs:
           RELEASE_SHA="${GITHUB_SHA}"
           REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
           ssh "$SSH_USER@$SSH_HOST" "install -d -m 0755 /home/k8s-admin/releases ${REMOTE_ROOT}"
-          rsync -az manifests/ "$SSH_USER@$SSH_HOST:${REMOTE_ROOT}/manifests/"
+          rsync -az \
+            --exclude 'manifests/**/deployment.yaml' \
+            --exclude 'manifests/**/deployment.yml' \
+            manifests/ "$SSH_USER@$SSH_HOST:${REMOTE_ROOT}/manifests/"
 
       - name: Dry-run apply (core)
         run: |
