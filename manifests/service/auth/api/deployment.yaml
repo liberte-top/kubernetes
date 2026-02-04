@@ -30,10 +30,10 @@ spec:
               value: "true"
           resources:
             requests:
-              cpu: "100m"
+              cpu: "500m"
               memory: "256Mi"
             limits:
-              cpu: "500m"
+              cpu: "1500m"
               memory: "512Mi"
           ports:
             - containerPort: 3333
