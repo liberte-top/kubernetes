@@ -32,6 +32,12 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
+      - name: Ensure namespaces
+        run: |
+          set -euo pipefail
+          ssh "$SSH_USER@$SSH_HOST" "kubectl get ns core >/dev/null 2>&1 || kubectl create ns core"
+          ssh "$SSH_USER@$SSH_HOST" "kubectl get ns service >/dev/null 2>&1 || kubectl create ns service"
+
       - name: Upload manifests (rsync)
         run: |
           set -euo pipefail
