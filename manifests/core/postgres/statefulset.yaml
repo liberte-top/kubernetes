@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: auth-postgres
-  namespace: service
+  name: postgres
+  namespace: core
   labels:
-    app: auth-postgres
+    app: postgres
 spec:
-  serviceName: auth-postgres
+  serviceName: postgres
   replicas: 1
   selector:
     matchLabels:
-      app: auth-postgres
+      app: postgres
   template:
     metadata:
       labels:
-        app: auth-postgres
+        app: postgres
     spec:
       containers:
         - name: postgres
@@ -24,17 +24,17 @@ spec:
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: auth-postgres
+                  name: postgres
                   key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: auth-postgres
+                  name: postgres
                   key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: auth-postgres
+                  name: postgres
                   key: POSTGRES_PASSWORD
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
