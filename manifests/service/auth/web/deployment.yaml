@@ -22,14 +22,12 @@ spec:
     spec:
       containers:
         - name: auth-web
-          image: ghcr.io/liberte-top/auth-web:sha-e7236fc
+          image: ghcr.io/liberte-top/auth-web:sha-f643f3e
           ports:
             - containerPort: 8888
           env:
             - name: NEXT_PUBLIC_ENV
               value: "prod"
-            - name: NEXT_PUBLIC_GIT_SHA
-              value: "sha-33a6c24"
             - name: AUTH_API_BASE_URL
               value: "http://auth-api:3333"
             - name: NEXT_PUBLIC_AUTH_API_BASE_URL
