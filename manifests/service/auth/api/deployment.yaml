@@ -28,6 +28,25 @@ spec:
           env:
             - name: SPRING_MAIN_LAZY_INITIALIZATION
               value: "true"
+            - name: PGHOST
+              value: auth-postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: auth-postgres
+                  key: POSTGRES_DB
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: auth-postgres
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: auth-postgres
+                  key: POSTGRES_PASSWORD
           resources:
             requests:
               cpu: "50m"
