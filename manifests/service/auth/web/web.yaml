@@ -35,6 +35,10 @@ spec:
               value: "prod"
             - name: NEXT_PUBLIC_GIT_SHA
               value: "sha-33a6c24"
+            - name: AUTH_API_BASE_URL
+              value: "http://auth-api:3333"
+            - name: NEXT_PUBLIC_AUTH_API_BASE_URL
+              value: "https://auth.liberte.top"
           readinessProbe:
             httpGet:
               path: /__health__
