@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: auth-web
-          image: ghcr.io/liberte-top/auth-web:sha-33a6c24
+          image: ghcr.io/liberte-top/auth-web:sha-e7236fc
           ports:
             - containerPort: 8888
           env:
