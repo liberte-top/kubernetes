@@ -57,10 +57,12 @@ jobs:
       - name: Ensure auth-postgres secret
         run: |
           set -euo pipefail
+          DATABASE_URL="postgres://${RDS_USER}:${RDS_PASSWD}@auth-postgres:5432/${RDS_DB}"
           ssh "$SSH_USER@$SSH_HOST" "kubectl create secret generic auth-postgres -n service \
             --from-literal=POSTGRES_DB=${RDS_DB} \
             --from-literal=POSTGRES_USER=${RDS_USER} \
             --from-literal=POSTGRES_PASSWORD=${RDS_PASSWD} \
+            --from-literal=DATABASE_URL=${DATABASE_URL} \
             --dry-run=client -o yaml | kubectl apply -f -"
 
       - name: Dry-run apply (full)
