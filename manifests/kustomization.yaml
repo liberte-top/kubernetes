@@ -4,4 +4,6 @@ resources:
   - service/auth/api
   - service/auth/web
   - service/auth/ingress
+  - service/landing
+  - service/landing/ingress
   - service/singbox/ingress
