@@ -10,9 +10,7 @@ concurrency:
 env:
   SSH_HOST: ${{ secrets.SSH_HOST }}
   SSH_USER: ${{ secrets.SSH_USER }}
-  RDS_DB: ${{ secrets.RDS_DB }}
-  RDS_USER: ${{ secrets.RDS_USER }}
-  RDS_PASSWD: ${{ secrets.RDS_PASSWD }}
+  SSH_DEST: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
 
 jobs:
   apply:
@@ -32,57 +30,16 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Ensure namespaces
-        run: |
-          set -euo pipefail
-          ssh "$SSH_USER@$SSH_HOST" "kubectl get ns core >/dev/null 2>&1 || kubectl create ns core"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl get ns service >/dev/null 2>&1 || kubectl create ns service"
-
-      - name: Upload manifests (rsync)
+      - name: Deploy manifests
         run: |
           set -euo pipefail
           RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "install -d -m 0755 /home/k8s-admin/releases ${REMOTE_ROOT}"
-          rsync -az manifests/ "$SSH_USER@$SSH_HOST:${REMOTE_ROOT}/manifests/"
+          REMOTE_TMPDIR="/tmp/liberte-k8s-${RELEASE_SHA}"
+          trap 'ssh "$SSH_DEST" "rm -rf ${REMOTE_TMPDIR}" || true' EXIT
 
-      - name: Dry-run apply (core)
-        run: |
-          set -euo pipefail
-          RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core --dry-run=server"
+          ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
+          rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
-      - name: Apply core manifest
-        run: |
-          set -euo pipefail
-          RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests/core"
-
-      - name: Ensure postgres secrets
-        run: |
-          set -euo pipefail
-          DATABASE_URL="postgres://${RDS_USER}:${RDS_PASSWD}@postgres.core.svc:5432/${RDS_DB}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl create secret generic postgres -n core \
-            --from-literal=POSTGRES_DB=${RDS_DB} \
-            --from-literal=POSTGRES_USER=${RDS_USER} \
-            --from-literal=POSTGRES_PASSWORD=${RDS_PASSWD} \
-            --dry-run=client -o yaml | kubectl apply -f -"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl create secret generic postgres -n service \
-            --from-literal=DATABASE_URL=${DATABASE_URL} \
-            --dry-run=client -o yaml | kubectl apply -f -"
-
-      - name: Dry-run apply (full)
-        run: |
-          set -euo pipefail
-          RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests --dry-run=server"
-
-      - name: Apply full manifest
-        run: |
-          set -euo pipefail
-          RELEASE_SHA="${GITHUB_SHA}"
-          REMOTE_ROOT="/home/k8s-admin/releases/${RELEASE_SHA}"
-          ssh "$SSH_USER@$SSH_HOST" "kubectl apply -k ${REMOTE_ROOT}/manifests"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests --dry-run=server"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests"
+          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/placeholder --timeout=120s"
