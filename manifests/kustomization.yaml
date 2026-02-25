@@ -1,9 +1,4 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - service/auth/api
-  - service/auth/web
-  - service/auth/ingress
-  - service/landing
-  - service/landing/ingress
-  - service/singbox/ingress
+  - service
