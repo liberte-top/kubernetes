@@ -1,0 +1,25 @@
+name: ci.guard-main-taskdir
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  forbid-task-dir-on-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fail if .task is tracked on main
+        run: |
+          if git ls-tree -r --name-only HEAD | grep -E '^\.task/' >/dev/null; then
+            echo "ERROR: .task/ must not be committed on main."
+            echo "Please promote useful knowledge to docs and remove .task/ before merge."
+            exit 1
+          fi
