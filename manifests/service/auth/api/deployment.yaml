@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  namespace: service
+  labels:
+    app: auth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-api
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+        - name: auth-api
+          image: hashicorp/http-echo:1.0.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-listen=:5678"
+            - "-text=auth-api placeholder"
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: 5678
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api
+              port: 5678
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: auth
+  namespace: service
+spec:
+  tls:
+    - hosts:
+        - auth.liberte.top
+      secretName: auth-liberte-top-tls
+  rules:
+    - host: auth.liberte.top
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-api
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-web
+                port:
+                  number: 80

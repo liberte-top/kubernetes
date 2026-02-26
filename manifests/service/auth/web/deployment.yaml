@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-web
+  namespace: service
+  labels:
+    app: auth-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-web
+  template:
+    metadata:
+      labels:
+        app: auth-web
+    spec:
+      containers:
+        - name: auth-web
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
