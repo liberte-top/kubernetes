@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: run from kubernetes/ directory so relative paths resolve (./scripts, ./.env).
+# Usage: can run from any directory.
 # Behavior:
 #   - SSH ControlMaster/ControlPersist tunnel reuse
 #   - local port from INFRA_KUBECTL_TUNNEL_LOCAL_PORT (default: 56443)
@@ -9,9 +9,11 @@ set -euo pipefail
 #   - fetch remote kubeconfig to a temp file via scp for each invocation
 #   - no args: execute "kubectl get nodes --request-timeout=15s"
 # shellcheck source=./scripts/utils.sh
-source "./scripts/utils.sh" && __kubernetes_utils_guard__
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+source "${SCRIPT_DIR}/utils.sh" && __kubernetes_utils_guard__
 
-load_env_file
+load_env_file "${REPO_ROOT}/.env"
 
 require_command ssh
 

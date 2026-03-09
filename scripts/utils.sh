@@ -34,7 +34,9 @@ require_command() {
 
 load_env_file() {
   local file_path="${1:-./.env}"
-  require_file "${file_path}" "Create it from ./.env.example."
+  local env_example_path
+  env_example_path="$(dirname "${file_path}")/.env.example"
+  require_file "${file_path}" "Create it from ${env_example_path}."
   set -a
   # shellcheck source=/dev/null
   source "${file_path}"

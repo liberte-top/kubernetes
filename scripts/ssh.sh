@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: run from kubernetes/ directory so relative paths resolve (./scripts, ./.env).
+# Usage: can run from any directory.
 # shellcheck source=./scripts/utils.sh
-source "./scripts/utils.sh" && __kubernetes_utils_guard__
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+source "${SCRIPT_DIR}/utils.sh" && __kubernetes_utils_guard__
 
-load_env_file
+load_env_file "${REPO_ROOT}/.env"
 require_command ssh
 
 require_env INFRA_SSH_HOST

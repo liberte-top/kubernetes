@@ -8,9 +8,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SSH_HOST: ${{ secrets.SSH_HOST }}
-  SSH_USER: ${{ secrets.SSH_USER }}
-  SSH_DEST: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+  SSH_HOST: ${{ secrets.INFRA_SSH_HOST }}
+  SSH_USER: ${{ secrets.INFRA_SSH_USER }}
+  SSH_DEST: ${{ secrets.INFRA_SSH_USER }}@${{ secrets.INFRA_SSH_HOST }}
+  INFRA_SSH_KNOWN_HOSTS: ${{ secrets.INFRA_SSH_KNOWN_HOSTS }}
 
 jobs:
   apply:
@@ -22,13 +23,15 @@ jobs:
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.INFRA_SSH_PRIVATE_KEY }}
 
-      - name: Trust host key
+      - name: Prepare SSH known_hosts
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          test -n "$INFRA_SSH_KNOWN_HOSTS"
+          printf '%s\n' "$INFRA_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy manifests
         run: |
