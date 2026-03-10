@@ -4,4 +4,5 @@ resources:
   - api
   - web
   - middleware.yaml
-  - ingress.yaml
+  - ingress.public.yaml
+  - ingress.protected.yaml

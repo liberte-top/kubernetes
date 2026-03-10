@@ -1,11 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: smoke
+  name: smoke-public
   namespace: service
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: service-smoke-forward-auth@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
@@ -19,13 +18,6 @@ spec:
                 name: smoke-api
                 port:
                   number: 4310
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: smoke-web
-                port:
-                  number: 80
   tls:
     - hosts:
         - smoke.liberte.top
