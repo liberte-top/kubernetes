@@ -103,7 +103,7 @@ jobs:
             "created_by": None,
           }).encode()
           req = urllib.request.Request(
-            os.environ["AUTH_PUBLIC_BASE_URL"] + "/api/v1/accounts",
+            os.environ["AUTH_PUBLIC_BASE_URL"] + "/api/v1/admin/accounts",
             data=payload,
             headers={"Content-Type": "application/json"},
           )
