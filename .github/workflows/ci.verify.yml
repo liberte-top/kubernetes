@@ -47,6 +47,21 @@ jobs:
           REMOTE_TMPDIR="/tmp/liberte-k8s-${RELEASE_SHA}"
           trap 'ssh "$SSH_DEST" "rm -rf ${REMOTE_TMPDIR}" || true' EXIT
 
+          retry() {
+            local attempts="$1"
+            shift
+            local i
+            for i in $(seq 1 "$attempts"); do
+              if "$@"; then
+                return 0
+              fi
+              if [ "$i" -lt "$attempts" ]; then
+                sleep 3
+              fi
+            done
+            return 1
+          }
+
           test -n "$POSTGRES_DB"
           test -n "$POSTGRES_USER"
           test -n "$POSTGRES_PASSWORD"
@@ -55,18 +70,18 @@ jobs:
           DB_PASS_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_PASSWORD"], safe=""))')"
           DATABASE_URL="postgres://${DB_USER_ENCODED}:${DB_PASS_ENCODED}@postgres.core.svc.cluster.local:5432/${POSTGRES_DB}"
 
-          ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
-          rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
+          retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
+          retry 3 rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
-          ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
-          ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${POSTGRES_DB}' --from-literal=POSTGRES_USER='${POSTGRES_USER}' --from-literal=POSTGRES_PASSWORD='${POSTGRES_PASSWORD}' --dry-run=client -o yaml | kubectl apply -f -"
-          ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --dry-run=client -o yaml | kubectl apply -f -"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
-          ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
-          ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
-          ssh "$SSH_DEST" 'for app in core service; do for i in $(seq 1 60); do status=$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"; done'
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
+          retry 3 ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${POSTGRES_DB}' --from-literal=POSTGRES_USER='${POSTGRES_USER}' --from-literal=POSTGRES_PASSWORD='${POSTGRES_PASSWORD}' --dry-run=client -o yaml | kubectl apply -f -"
+          retry 3 ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --dry-run=client -o yaml | kubectl apply -f -"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
+          retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
+          retry 3 ssh "$SSH_DEST" 'for app in core service; do for i in $(seq 1 60); do status=$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"; done'
 
       - name: Smoke test public auth endpoint
         run: |
