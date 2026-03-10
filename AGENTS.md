@@ -90,6 +90,7 @@ kubernetes/
 - `service.auth` workflows open image-promotion PRs into this repository.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
 - `.github/workflows/ci.verify.yml` validates manifests, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
+- `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy` even when runtime secrets make it appear `OutOfSync`.
 - Avoid coupling CI to local helper scripts unless the workflow itself needs script-specific behavior.
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
 - Require `INFRA_SSH_KNOWN_HOSTS` in CI and fail fast if host identity is missing.

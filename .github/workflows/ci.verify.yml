@@ -81,7 +81,8 @@ jobs:
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
-          retry 3 ssh "$SSH_DEST" 'for app in core service; do for i in $(seq 1 60); do status=$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"; done'
+          retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do status=$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"'
+          retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do health=$(kubectl -n argocd get application core -o jsonpath="{.status.health.status}"); if [ "$health" = "Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application core -o jsonpath="{.status.health.status}")" = "Healthy"'
 
       - name: Smoke test public auth endpoint
         run: |
