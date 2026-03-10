@@ -86,16 +86,16 @@ kubernetes/
 - `./scripts/kubectl.sh -n core get statefulset,svc,secret`
 - `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
 
-## CI Apply Strategy
-- Keep `.github/workflows/ci.apply.yml` simple: SSH setup, upload `manifests/` to remote temp dir, dry-run apply, apply, rollout verify, cleanup.
-- ArgoCD is now the active reconciler for `core` and `service`.
+## CI Deploy Strategy
+- `service.auth` workflows open image-promotion PRs into this repository.
+- `kubernetes` owns merge policy and ArgoCD owns reconciliation.
+- `.github/workflows/ci.verify.yml` validates manifests, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
 - Avoid coupling CI to local helper scripts unless the workflow itself needs script-specific behavior.
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
 - Require `INFRA_SSH_KNOWN_HOSTS` in CI and fail fast if host identity is missing.
 - Create runtime Kubernetes secrets from CI secrets before applying manifests.
 - Keep `auth-api` / `auth-web` image SHAs explicit in git.
-- Use `.github/workflows/ci.promote-service-auth.yml` to advance those image tags to the latest successful `service.auth` builds.
-- `ci.apply` now validates `core` / `service`, applies ArgoCD project/applications, refreshes them, and waits for `Synced Healthy`.
+- `ci.verify` does not set images or perform imperative deploys.
 - Run a public smoke check against `https://auth.liberte.top` after rollout completes.
 
 ## Change Policy

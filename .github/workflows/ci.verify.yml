@@ -1,10 +1,13 @@
-name: apply
+name: ci.verify
 
 on:
   workflow_dispatch: {}
+  push:
+    branches:
+      - main
 
 concurrency:
-  group: k8s-apply
+  group: k8s-verify
   cancel-in-progress: false
 
 env:
@@ -18,7 +21,7 @@ env:
   AUTH_PUBLIC_BASE_URL: https://auth.liberte.top
 
 jobs:
-  apply:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,7 +40,7 @@ jobs:
           printf '%s\n' "$INFRA_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Validate and sync manifests
+      - name: Validate and verify ArgoCD sync
         run: |
           set -euo pipefail
           RELEASE_SHA="${GITHUB_SHA}"
