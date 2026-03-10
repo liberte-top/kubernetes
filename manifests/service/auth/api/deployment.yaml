@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: auth-api
-          image: ghcr.io/liberte-top/service-auth-api:sha-e39724c4e246d831ffbc2ad1bf789789c5555f26
+          image: ghcr.io/liberte-top/service-auth-api:sha-4019d206897e14df77c4f36177309beaba9db42e
           imagePullPolicy: Always
           env:
             - name: PORT
