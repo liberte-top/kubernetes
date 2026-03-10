@@ -37,7 +37,7 @@ jobs:
           printf '%s\n' "$INFRA_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy manifests
+      - name: Validate and sync manifests
         run: |
           set -euo pipefail
           RELEASE_SHA="${GITHUB_SHA}"
@@ -56,16 +56,14 @@ jobs:
           rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
           ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
           ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${POSTGRES_DB}' --from-literal=POSTGRES_USER='${POSTGRES_USER}' --from-literal=POSTGRES_PASSWORD='${POSTGRES_PASSWORD}' --dry-run=client -o yaml | kubectl apply -f -"
           ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --dry-run=client -o yaml | kubectl apply -f -"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service"
-          ssh "$SSH_DEST" "kubectl -n service delete deployment/placeholder service/placeholder --ignore-not-found=true"
-          ssh "$SSH_DEST" "kubectl -n core rollout status statefulset/postgres --timeout=180s"
-          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-api --timeout=180s"
-          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-web --timeout=180s"
+          ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
+          ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
+          ssh "$SSH_DEST" 'for app in core service; do for i in $(seq 1 60); do status=$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application "$app" -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"; done'
 
       - name: Smoke test public auth endpoint
         run: |
