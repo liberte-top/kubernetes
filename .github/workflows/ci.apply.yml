@@ -45,4 +45,7 @@ jobs:
 
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests --dry-run=server"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests"
-          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/placeholder --timeout=120s"
+          ssh "$SSH_DEST" "kubectl -n service delete deployment/placeholder service/placeholder --ignore-not-found=true"
+          ssh "$SSH_DEST" "kubectl -n core rollout status statefulset/postgres --timeout=180s"
+          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-api --timeout=180s"
+          ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-web --timeout=180s"

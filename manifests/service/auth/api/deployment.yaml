@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  namespace: service
+  labels:
+    app: auth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-api
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+        - name: auth-api
+          image: ghcr.io/liberte-top/service-auth-api:main
+          imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "3333"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-api-env
+                  key: DATABASE_URL
+          ports:
+            - containerPort: 3333
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3333
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3333
+            initialDelaySeconds: 10
+            periodSeconds: 10
