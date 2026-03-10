@@ -43,8 +43,11 @@ jobs:
           ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests --dry-run=server"
-          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests"
+          ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
+          ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service"
           ssh "$SSH_DEST" "kubectl -n service delete deployment/placeholder service/placeholder --ignore-not-found=true"
           ssh "$SSH_DEST" "kubectl -n core rollout status statefulset/postgres --timeout=180s"
           ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-api --timeout=180s"
