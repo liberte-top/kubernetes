@@ -4,9 +4,9 @@
 - `AGENTS.md`: kubernetes collaboration and execution conventions.
 
 ## Current Flow
-- This repository is in minimal cold-start mode.
-- `manifests/service/placeholder` is the current deployable workload baseline.
-- `manifests/core` exists but is not part of the default apply path yet.
+- This repository now deploys the live `service.auth` stack.
+- Default apply includes both `manifests/core` and `manifests/service`.
+- `service/auth` is the current deployable workload baseline.
 - Use `scripts/kubectl.sh` for remote cluster operations via SSH tunnel reuse.
 
 ## 60-Second Local Start
@@ -29,11 +29,13 @@ kubernetes/
 ├── .github/workflows/        # CI entrypoints
 ├── manifests/                # Kubernetes desired state
 │   ├── kustomization.yaml
+│   ├── core/
 │   └── service/
 │       ├── namespace.yaml
-│       └── placeholder/
-│           ├── deployment.yaml
-│           └── service.yaml
+│       └── auth/
+│           ├── api/
+│           ├── web/
+│           └── ingress.yaml
 ├── scripts/                  # Operational entrypoints and local tooling
 │   ├── kubectl.sh            # Single kubectl runtime wrapper (SSH tunnel reuse)
 │   ├── ssh.sh                # Direct SSH connectivity helper
@@ -67,7 +69,8 @@ kubernetes/
 - `./scripts/kubectl.sh`
 - `./scripts/kubectl.sh get nodes -o wide`
 - `./scripts/kubectl.sh apply -k manifests`
-- `./scripts/kubectl.sh -n service get deploy,svc,pod`
+- `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
+- `./scripts/kubectl.sh -n core get statefulset,svc,secret`
 
 ## Kubectl Tunnel Workflow
 - `scripts/kubectl.sh` uses SSH `ControlMaster/ControlPersist` tunnel reuse with fixed local port.
@@ -79,13 +82,16 @@ kubernetes/
 - `./scripts/kubectl.sh get nodes --request-timeout=15s`
 - `./scripts/kubectl.sh apply -k manifests`
 - `./scripts/kubectl.sh apply -k manifests` (idempotency pass)
-- `./scripts/kubectl.sh -n service get deploy,svc,pod`
+- `./scripts/kubectl.sh -n core get statefulset,svc,secret`
+- `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
 
 ## CI Apply Strategy
 - Keep `.github/workflows/ci.apply.yml` simple: SSH setup, upload `manifests/` to remote temp dir, dry-run apply, apply, rollout verify, cleanup.
 - Avoid coupling CI to local helper scripts unless the workflow itself needs script-specific behavior.
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
 - Require `INFRA_SSH_KNOWN_HOSTS` in CI and fail fast if host identity is missing.
+- Create runtime Kubernetes secrets from CI secrets before applying manifests.
+- Restart `auth-api` and `auth-web` during apply so `:main` image updates are actually pulled.
 
 ## Change Policy
 - Keep `scripts/kubectl.sh` as the single operational entrypoint.
