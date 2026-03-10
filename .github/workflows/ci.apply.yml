@@ -15,6 +15,7 @@ env:
   POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
   POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  AUTH_PUBLIC_BASE_URL: https://auth.liberte.top
 
 jobs:
   apply:
@@ -35,6 +36,32 @@ jobs:
           test -n "$INFRA_SSH_KNOWN_HOSTS"
           printf '%s\n' "$INFRA_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+      - name: Resolve service.auth image tags
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          import urllib.request
+
+          def latest_success_head_sha(workflow_file: str) -> str:
+            url = (
+              f"https://api.github.com/repos/liberte-top/service.auth/actions/workflows/"
+              f"{workflow_file}/runs?branch=main&event=push&per_page=20"
+            )
+            req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+              payload = json.load(resp)
+            for run in payload.get("workflow_runs", []):
+              if run.get("conclusion") == "success":
+                return run["head_sha"]
+            raise SystemExit(f"no successful main push run found for {workflow_file}")
+
+          api_sha = latest_success_head_sha("ci.deploy.api.yml")
+          web_sha = latest_success_head_sha("ci.deploy.web.yml")
+          print(f"AUTH_API_IMAGE=ghcr.io/liberte-top/service-auth-api:sha-{api_sha}")
+          print(f"AUTH_WEB_IMAGE=ghcr.io/liberte-top/service-auth-web:sha-{web_sha}")
+          PY
 
       - name: Deploy manifests
         run: |
@@ -62,7 +89,37 @@ jobs:
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service"
           ssh "$SSH_DEST" "kubectl -n service delete deployment/placeholder service/placeholder --ignore-not-found=true"
-          ssh "$SSH_DEST" "kubectl -n service rollout restart deployment/auth-api deployment/auth-web"
+          ssh "$SSH_DEST" "kubectl -n service set image deployment/auth-api auth-api=${AUTH_API_IMAGE}"
+          ssh "$SSH_DEST" "kubectl -n service set image deployment/auth-web auth-web=${AUTH_WEB_IMAGE}"
           ssh "$SSH_DEST" "kubectl -n core rollout status statefulset/postgres --timeout=180s"
           ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-api --timeout=180s"
           ssh "$SSH_DEST" "kubectl -n service rollout status deployment/auth-web --timeout=180s"
+
+      - name: Smoke test public auth endpoint
+        run: |
+          set -euo pipefail
+          curl -fsS "${AUTH_PUBLIC_BASE_URL}/api/v1/health"
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+
+          suffix = time.strftime("%H%M%S")
+          payload = json.dumps({
+            "account_type": "user",
+            "username": f"ci-{suffix}",
+            "email": f"ci-{suffix}@example.com",
+            "phone": None,
+            "created_by": None,
+          }).encode()
+          req = urllib.request.Request(
+            os.environ["AUTH_PUBLIC_BASE_URL"] + "/api/v1/accounts",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp:
+            if resp.status != 201:
+              raise SystemExit(f"unexpected status: {resp.status}")
+            print(resp.read().decode())
+          PY
