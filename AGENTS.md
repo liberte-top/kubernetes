@@ -92,7 +92,8 @@ kubernetes/
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
 - Require `INFRA_SSH_KNOWN_HOSTS` in CI and fail fast if host identity is missing.
 - Create runtime Kubernetes secrets from CI secrets before applying manifests.
-- Resolve the latest successful `service.auth` workflow SHAs and deploy `auth-api` / `auth-web` with `sha-<commit>` image tags.
+- Keep `auth-api` / `auth-web` image SHAs explicit in git.
+- Use `.github/workflows/ci.promote-service-auth.yml` to advance those image tags to the latest successful `service.auth` builds.
 - Run a public smoke check against `https://auth.liberte.top` after rollout completes.
 
 ## Change Policy
