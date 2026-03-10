@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: smoke-api
-          image: ghcr.io/liberte-top/app-smoke-api:sha-f1a5c17864de7566922f73a37c5a27a2ec1b0f5b
+          image: ghcr.io/liberte-top/app-smoke-api:sha-b0d48d05bbb9c6e21eabd3f142bd1795a231a9af
           imagePullPolicy: Always
           env:
             - name: PORT
