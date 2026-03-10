@@ -47,12 +47,16 @@ jobs:
           test -n "$RDS_USER"
           test -n "$RDS_PASSWD"
 
+          DB_USER_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["RDS_USER"], safe=""))')"
+          DB_PASS_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["RDS_PASSWD"], safe=""))')"
+          DATABASE_URL="postgres://${DB_USER_ENCODED}:${DB_PASS_ENCODED}@postgres.core.svc.cluster.local:5432/${RDS_DB}"
+
           ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
           ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
           ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${RDS_DB}' --from-literal=POSTGRES_USER='${RDS_USER}' --from-literal=POSTGRES_PASSWORD='${RDS_PASSWD}' --dry-run=client -o yaml | kubectl apply -f -"
-          ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='postgres://${RDS_USER}:${RDS_PASSWD}@postgres.core.svc.cluster.local:5432/${RDS_DB}' --dry-run=client -o yaml | kubectl apply -f -"
+          ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --dry-run=client -o yaml | kubectl apply -f -"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
