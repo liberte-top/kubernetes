@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: smoke-web
-          image: ghcr.io/liberte-top/app-smoke-web:sha-f3fbdebe38400aa51f609f61756d561928f497da
+          image: ghcr.io/liberte-top/app-smoke-web:sha-605ed6ebb450dfc7adc2b51ab9732f73364b1bc5
           imagePullPolicy: Always
           ports:
             - containerPort: 80
