@@ -12,6 +12,9 @@ env:
   SSH_USER: ${{ secrets.INFRA_SSH_USER }}
   SSH_DEST: ${{ secrets.INFRA_SSH_USER }}@${{ secrets.INFRA_SSH_HOST }}
   INFRA_SSH_KNOWN_HOSTS: ${{ secrets.INFRA_SSH_KNOWN_HOSTS }}
+  RDS_DB: ${{ secrets.RDS_DB }}
+  RDS_USER: ${{ secrets.RDS_USER }}
+  RDS_PASSWD: ${{ secrets.RDS_PASSWD }}
 
 jobs:
   apply:
@@ -40,10 +43,16 @@ jobs:
           REMOTE_TMPDIR="/tmp/liberte-k8s-${RELEASE_SHA}"
           trap 'ssh "$SSH_DEST" "rm -rf ${REMOTE_TMPDIR}" || true' EXIT
 
+          test -n "$RDS_DB"
+          test -n "$RDS_USER"
+          test -n "$RDS_PASSWD"
+
           ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
           ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
+          ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${RDS_DB}' --from-literal=POSTGRES_USER='${RDS_USER}' --from-literal=POSTGRES_PASSWORD='${RDS_PASSWD}' --dry-run=client -o yaml | kubectl apply -f -"
+          ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='postgres://${RDS_USER}:${RDS_PASSWD}@postgres.core.svc.cluster.local:5432/${RDS_DB}' --dry-run=client -o yaml | kubectl apply -f -"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core"
           ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
