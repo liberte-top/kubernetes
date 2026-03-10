@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smoke-api
+  namespace: service
+  labels:
+    app: smoke-api
+spec:
+  type: ClusterIP
+  selector:
+    app: smoke-api
+  ports:
+    - name: http
+      port: 4310
+      targetPort: 4310

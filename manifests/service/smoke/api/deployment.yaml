@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smoke-api
+  namespace: service
+  labels:
+    app: smoke-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smoke-api
+  template:
+    metadata:
+      labels:
+        app: smoke-api
+    spec:
+      containers:
+        - name: smoke-api
+          image: ghcr.io/liberte-top/app-smoke-api:main
+          imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "4310"
+          ports:
+            - containerPort: 4310
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 4310
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 4310
+            initialDelaySeconds: 10
+            periodSeconds: 10

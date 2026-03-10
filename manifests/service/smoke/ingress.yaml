@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smoke
+  namespace: service
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: smoke.liberte.top
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smoke-web
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - smoke.liberte.top
+      secretName: smoke-liberte-top-tls
