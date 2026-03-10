@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: core
+  namespace: argocd
+spec:
+  project: liberte-top
+  source:
+    repoURL: https://github.com/liberte-top/kubernetes.git
+    targetRevision: main
+    path: manifests/core
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: core
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

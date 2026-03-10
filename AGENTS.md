@@ -30,6 +30,7 @@ kubernetes/
 ├── manifests/                # Kubernetes desired state
 │   ├── kustomization.yaml
 │   ├── core/
+│   ├── argocd/
 │   └── service/
 │       ├── namespace.yaml
 │       └── auth/
@@ -98,6 +99,7 @@ kubernetes/
 - Keep `scripts/kubectl.sh` as the single operational entrypoint.
 - Keep service layer deployable at all times, even during refactor.
 - If service modules are reintroduced, keep kustomization composition explicit and reviewable.
+- Keep `manifests/argocd` as prepared GitOps resources until ArgoCD becomes the active reconciler.
 
 ## Troubleshooting
 - Missing `.env`: copy from `.env.example` and fill in SSH settings before running helper scripts.
