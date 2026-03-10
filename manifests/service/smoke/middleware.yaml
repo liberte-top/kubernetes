@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: smoke-forward-auth
+  namespace: service
+spec:
+  forwardAuth:
+    address: http://auth-api.service.svc.cluster.local:3333/internal/auth/session/check
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Subject
+      - X-Auth-Type
+      - X-Auth-Scopes
+      - X-Auth-Email
+      - X-Auth-Profile-Id
