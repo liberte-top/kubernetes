@@ -8,7 +8,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/app-smoke-api
-    tag: sha-8a2c657ad5d9255e155260574ed56a01a4eccd7d # smoke-api-image
+    tag: sha-8e712f0d2898f68dc4c3148c92f71bd658b57270 # smoke-api-image
     pullPolicy: Always
   port: 4310
   service:
