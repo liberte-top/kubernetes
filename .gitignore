@@ -7,3 +7,7 @@
 .DS_Store
 *.swp
 *.swo
+
+# Generated Helm render output
+manifests/service/auth/rendered.yaml
+manifests/service/smoke/rendered.yaml

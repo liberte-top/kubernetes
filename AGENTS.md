@@ -19,7 +19,8 @@
 ## Single Source of Truth
 - Runtime parameters live in `.env`.
 - Execution entry is `scripts/kubectl.sh`.
-- Kubernetes desired state lives in `manifests/`, with Helm source for service-layer apps living in `charts/` and rendered back into `manifests/`.
+- Kubernetes desired state lives in `manifests/`, with Helm source for service/app layer workloads living in `charts/`.
+- Helm-managed rendered manifests are generated locally with `scripts/render-helm.sh` and in CI temp workspaces; they are no longer committed to git.
 
 ## Repository Structure (Refactor Map)
 Use this as the baseline module map before iterative refactor.
@@ -36,11 +37,13 @@ kubernetes/
 │   ├── argocd/
 │   └── service/
 │       ├── namespace.yaml
-│       └── auth/
-│           ├── kustomization.yaml
-│           └── rendered.yaml
+│       ├── auth/
+│       │   └── kustomization.yaml
+│       └── smoke/
+│           └── kustomization.yaml
 ├── scripts/                  # Operational entrypoints and local tooling
 │   ├── kubectl.sh            # Single kubectl runtime wrapper (SSH tunnel reuse)
+│   ├── render-helm.sh        # Generates Helm-managed rendered manifests locally
 │   ├── ssh.sh                # Direct SSH connectivity helper
 │   └── utils.sh              # Shared shell helpers for scripts
 ├── .env(.example)            # Runtime parameters
@@ -67,6 +70,7 @@ kubernetes/
 ## Common Commands
 - `./scripts/kubectl.sh tunnel status`
 - `./scripts/kubectl.sh tunnel restart`
+- `./scripts/render-helm.sh`
 - `./scripts/ssh.sh`
 - `./scripts/ssh.sh uname -a`
 - `./scripts/kubectl.sh`
@@ -90,10 +94,10 @@ kubernetes/
 
 ## CI Deploy Strategy
 - `service.auth` workflows open image-promotion PRs into this repository.
-- `service.auth` image promotion updates Helm values under `charts/service/auth/` and re-renders `manifests/service/auth/rendered.yaml`.
-- `app.smoke` image promotion updates Helm values under `charts/app/smoke/` and re-renders `manifests/service/smoke/rendered.yaml`.
+- `service.auth` image promotion updates Helm values under `charts/service/auth/`.
+- `app.smoke` image promotion updates Helm values under `charts/app/smoke/`.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
-- `.github/workflows/ci.verify.yml` validates manifests, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
+- `.github/workflows/ci.verify.yml` renders Helm-managed manifests in CI, validates them, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
 - `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy` even when runtime secrets make it appear `OutOfSync`.
 - Avoid coupling CI to local helper scripts unless the workflow itself needs script-specific behavior.
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
