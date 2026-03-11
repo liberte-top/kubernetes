@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
         - name: auth-api
-          image: ghcr.io/liberte-top/service-auth-api:sha-51ff14e3e21f12bd464ff10413c9a4528fc43076
+          image: ghcr.io/liberte-top/service-auth-api:sha-8eb2ccf17f5c124a78fd162a9edbf0af067c82c6
           imagePullPolicy: Always
           env:
             - name: EMAIL_FROM
