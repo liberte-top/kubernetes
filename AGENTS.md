@@ -28,6 +28,8 @@ Use this as the baseline module map before iterative refactor.
 kubernetes/
 ├── .github/workflows/        # CI entrypoints
 ├── charts/                   # Helm source for service/app layer migrations
+│   ├── service/
+│   └── app/
 ├── manifests/                # Kubernetes desired state
 │   ├── kustomization.yaml
 │   ├── core/
@@ -89,6 +91,7 @@ kubernetes/
 ## CI Deploy Strategy
 - `service.auth` workflows open image-promotion PRs into this repository.
 - `service.auth` image promotion updates Helm values under `charts/service/auth/` and re-renders `manifests/service/auth/rendered.yaml`.
+- `app.smoke` image promotion updates Helm values under `charts/app/smoke/` and re-renders `manifests/service/smoke/rendered.yaml`.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
 - `.github/workflows/ci.verify.yml` validates manifests, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
 - `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy` even when runtime secrets make it appear `OutOfSync`.

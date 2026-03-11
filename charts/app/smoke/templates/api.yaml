@@ -1,0 +1,63 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+    spec:
+      containers:
+        - name: smoke-api
+          image: {{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          env:
+{{- range $key, $value := .Values.api.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+{{- end }}
+          ports:
+            - containerPort: {{ .Values.api.port }}
+              name: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.readinessProbe.path }}
+              port: {{ .Values.api.port }}
+            initialDelaySeconds: {{ .Values.api.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.readinessProbe.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.livenessProbe.path }}
+              port: {{ .Values.api.port }}
+            initialDelaySeconds: {{ .Values.api.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.livenessProbe.periodSeconds }}
+{{- with .Values.api.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.port }}
+{{- end }}

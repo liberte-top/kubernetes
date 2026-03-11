@@ -1,0 +1,71 @@
+namespace: service
+
+app:
+  name: smoke
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/app-smoke-api
+    tag: sha-8a2c657ad5d9255e155260574ed56a01a4eccd7d # smoke-api-image
+    pullPolicy: Always
+  port: 4310
+  service:
+    port: 4310
+  env:
+    PORT: "4310"
+  readinessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 3
+    periodSeconds: 5
+  livenessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  resources: {}
+
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/app-smoke-web
+    tag: sha-526a0e58189b957d57ffbdc1acde3605d52348e1 # smoke-web-image
+    pullPolicy: Always
+  port: 80
+  service:
+    port: 80
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 2
+    periodSeconds: 5
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources: {}
+
+middleware:
+  enabled: true
+  name: smoke-forward-auth
+  address: http://auth-api.service.svc.cluster.local:3333/internal/auth/session/check
+  authResponseHeaders:
+    - X-Auth-Subject
+    - X-Auth-Type
+    - X-Auth-Scopes
+    - X-Auth-Email
+    - X-Auth-Profile-Id
+
+ingress:
+  className: traefik
+  host: smoke.liberte.top
+  tlsSecretName: smoke-liberte-top-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  protected:
+    enabled: true
+    middlewareRef: service-smoke-forward-auth@kubernetescrd
+  public:
+    enabled: true
+    path: /api/v1/health
+    pathType: Exact
