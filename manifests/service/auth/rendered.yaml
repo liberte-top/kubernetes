@@ -1,0 +1,161 @@
+---
+# Source: service-auth/templates/api.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-api
+  namespace: service
+  labels:
+    app: auth-api
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-api
+  ports:
+    - name: http
+      port: 3333
+      targetPort: 3333
+---
+# Source: service-auth/templates/web.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-web
+  namespace: service
+  labels:
+    app: auth-web
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+# Source: service-auth/templates/api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  namespace: service
+  labels:
+    app: auth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-api
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+        - name: auth-api
+          image: ghcr.io/liberte-top/service-auth-api:sha-51ff14e3e21f12bd464ff10413c9a4528fc43076
+          imagePullPolicy: Always
+          env:
+            - name: EMAIL_FROM
+              value: "Auth <auth@mail.liberte.top>"
+            - name: EMAIL_LOGIN_BASE_URL
+              value: "https://auth.liberte.top/api/v1/auth/login/email/complete"
+            - name: EMAIL_TOKEN_TTL_SECS
+              value: "900"
+            - name: EMAIL_VERIFY_BASE_URL
+              value: "https://auth.liberte.top/api/v1/auth/verify/email"
+            - name: FORWARDAUTH_LOGIN_URL
+              value: "https://auth.liberte.top/"
+            - name: FORWARDAUTH_SESSION_COOKIE_NAME
+              value: "liberte_session"
+            - name: PORT
+              value: "3333"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auth-api-env
+                  key: DATABASE_URL
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-api-env
+                  key: RESEND_API_KEY
+          ports:
+            - containerPort: 3333
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3333
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3333
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# Source: service-auth/templates/web.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-web
+  namespace: service
+  labels:
+    app: auth-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-web
+  template:
+    metadata:
+      labels:
+        app: auth-web
+    spec:
+      containers:
+        - name: auth-web
+          image: ghcr.io/liberte-top/service-auth-web:sha-928f03841245d229585ee5b77be52269b17eb5a1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+# Source: service-auth/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: auth
+  namespace: service
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: auth.liberte.top
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-web
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - auth.liberte.top
+      secretName: auth-liberte-top-tls

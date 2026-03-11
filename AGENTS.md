@@ -19,7 +19,7 @@
 ## Single Source of Truth
 - Runtime parameters live in `.env`.
 - Execution entry is `scripts/kubectl.sh`.
-- Kubernetes desired state lives in `manifests/`.
+- Kubernetes desired state lives in `manifests/`, with Helm source for service-layer apps living in `charts/` and rendered back into `manifests/`.
 
 ## Repository Structure (Refactor Map)
 Use this as the baseline module map before iterative refactor.
@@ -27,6 +27,7 @@ Use this as the baseline module map before iterative refactor.
 ```text
 kubernetes/
 ├── .github/workflows/        # CI entrypoints
+├── charts/                   # Helm source for service/app layer migrations
 ├── manifests/                # Kubernetes desired state
 │   ├── kustomization.yaml
 │   ├── core/
@@ -34,9 +35,8 @@ kubernetes/
 │   └── service/
 │       ├── namespace.yaml
 │       └── auth/
-│           ├── api/
-│           ├── web/
-│           └── ingress.yaml
+│           ├── kustomization.yaml
+│           └── rendered.yaml
 ├── scripts/                  # Operational entrypoints and local tooling
 │   ├── kubectl.sh            # Single kubectl runtime wrapper (SSH tunnel reuse)
 │   ├── ssh.sh                # Direct SSH connectivity helper
@@ -88,6 +88,7 @@ kubernetes/
 
 ## CI Deploy Strategy
 - `service.auth` workflows open image-promotion PRs into this repository.
+- `service.auth` image promotion updates Helm values under `charts/service/auth/` and re-renders `manifests/service/auth/rendered.yaml`.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
 - `.github/workflows/ci.verify.yml` validates manifests, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
 - `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy` even when runtime secrets make it appear `OutOfSync`.

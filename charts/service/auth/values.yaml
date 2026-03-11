@@ -1,0 +1,66 @@
+namespace: service
+
+app:
+  name: auth
+
+ingress:
+  className: traefik
+  host: auth.liberte.top
+  tlsSecretName: auth-liberte-top-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/service-auth-api
+    tag: sha-51ff14e3e21f12bd464ff10413c9a4528fc43076 # auth-api-image
+    pullPolicy: Always
+  port: 3333
+  service:
+    port: 3333
+  env:
+    PORT: "3333"
+    FORWARDAUTH_SESSION_COOKIE_NAME: liberte_session
+    FORWARDAUTH_LOGIN_URL: https://auth.liberte.top/
+    EMAIL_FROM: Auth <auth@mail.liberte.top>
+    EMAIL_VERIFY_BASE_URL: https://auth.liberte.top/api/v1/auth/verify/email
+    EMAIL_LOGIN_BASE_URL: https://auth.liberte.top/api/v1/auth/login/email/complete
+    EMAIL_TOKEN_TTL_SECS: "900"
+  secretEnv:
+    DATABASE_URL:
+      secretName: auth-api-env
+      secretKey: DATABASE_URL
+    RESEND_API_KEY:
+      secretName: auth-api-env
+      secretKey: RESEND_API_KEY
+  readinessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 3
+    periodSeconds: 5
+  livenessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  resources: {}
+
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/service-auth-web
+    tag: sha-928f03841245d229585ee5b77be52269b17eb5a1 # auth-web-image
+    pullPolicy: Always
+  port: 80
+  service:
+    port: 80
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 2
+    periodSeconds: 5
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources: {}
