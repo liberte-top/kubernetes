@@ -10,4 +10,7 @@
 app.kubernetes.io/name: {{ include "service-auth.fullname" .root }}
 app.kubernetes.io/component: {{ .component }}
 app.kubernetes.io/managed-by: Helm
+{{- range $key, $value := .root.Values.commonLabels }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
 {{- end -}}

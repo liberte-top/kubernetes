@@ -1,5 +1,8 @@
 namespace: service
 
+commonLabels: {}
+podAnnotations: {}
+
 app:
   name: auth
 
@@ -43,7 +46,13 @@ api:
     path: /api/v1/health
     initialDelaySeconds: 10
     periodSeconds: 10
-  resources: {}
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
 
 web:
   enabled: true
@@ -63,4 +72,10 @@ web:
     path: /
     initialDelaySeconds: 5
     periodSeconds: 10
-  resources: {}
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

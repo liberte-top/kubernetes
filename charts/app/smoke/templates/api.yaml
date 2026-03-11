@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+{{ include "app-smoke.labels" (dict "root" . "component" "api") | indent 4 }}
 spec:
   replicas: {{ .Values.api.replicaCount }}
   selector:
@@ -15,6 +16,11 @@ spec:
     metadata:
       labels:
         app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+{{ include "app-smoke.labels" (dict "root" . "component" "api") | indent 8 }}
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
     spec:
       containers:
         - name: smoke-api
@@ -52,6 +58,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
+{{ include "app-smoke.labels" (dict "root" . "component" "api") | indent 4 }}
 spec:
   type: ClusterIP
   selector:

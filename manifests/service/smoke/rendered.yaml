@@ -7,6 +7,9 @@ metadata:
   namespace: service
   labels:
     app: smoke-api
+    app.kubernetes.io/name: smoke
+    app.kubernetes.io/component: api
+    app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
   selector:
@@ -24,6 +27,9 @@ metadata:
   namespace: service
   labels:
     app: smoke-web
+    app.kubernetes.io/name: smoke
+    app.kubernetes.io/component: web
+    app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
   selector:
@@ -41,6 +47,9 @@ metadata:
   namespace: service
   labels:
     app: smoke-api
+    app.kubernetes.io/name: smoke
+    app.kubernetes.io/component: api
+    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
   selector:
@@ -50,6 +59,9 @@ spec:
     metadata:
       labels:
         app: smoke-api
+        app.kubernetes.io/name: smoke
+        app.kubernetes.io/component: api
+        app.kubernetes.io/managed-by: Helm
     spec:
       containers:
         - name: smoke-api
@@ -73,6 +85,13 @@ spec:
               port: 4310
             initialDelaySeconds: 10
             periodSeconds: 10
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
 ---
 # Source: app-smoke/templates/web.yaml
 apiVersion: apps/v1
@@ -82,6 +101,9 @@ metadata:
   namespace: service
   labels:
     app: smoke-web
+    app.kubernetes.io/name: smoke
+    app.kubernetes.io/component: web
+    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
   selector:
@@ -91,6 +113,9 @@ spec:
     metadata:
       labels:
         app: smoke-web
+        app.kubernetes.io/name: smoke
+        app.kubernetes.io/component: web
+        app.kubernetes.io/managed-by: Helm
     spec:
       containers:
         - name: smoke-web
@@ -111,6 +136,13 @@ spec:
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 25m
+              memory: 32Mi
 ---
 # Source: app-smoke/templates/ingress.yaml
 apiVersion: networking.k8s.io/v1

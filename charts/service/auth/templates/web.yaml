@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: {{ include "service-auth.componentName" (dict "root" . "component" "web") }}
+{{ include "service-auth.labels" (dict "root" . "component" "web") | indent 4 }}
 spec:
   replicas: {{ .Values.web.replicaCount }}
   selector:
@@ -15,6 +16,11 @@ spec:
     metadata:
       labels:
         app: {{ include "service-auth.componentName" (dict "root" . "component" "web") }}
+{{ include "service-auth.labels" (dict "root" . "component" "web") | indent 8 }}
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
     spec:
       containers:
         - name: auth-web
@@ -47,6 +53,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     app: {{ include "service-auth.componentName" (dict "root" . "component" "web") }}
+{{ include "service-auth.labels" (dict "root" . "component" "web") | indent 4 }}
 spec:
   type: ClusterIP
   selector:
