@@ -28,6 +28,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Helm
+        run: |
+          set -euo pipefail
+          if command -v helm >/dev/null 2>&1; then
+            helm version
+            exit 0
+          fi
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Render Helm-managed manifests
+        run: |
+          set -euo pipefail
+          helm lint ./charts/service/auth
+          helm lint ./charts/app/smoke
+          helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth/rendered.yaml
+          helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke/rendered.yaml
+
+      - name: Verify rendered manifests are committed
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- manifests/service/auth/rendered.yaml manifests/service/smoke/rendered.yaml
+
       - name: Install SSH key
         run: |
           set -euo pipefail
