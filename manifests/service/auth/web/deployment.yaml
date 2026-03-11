@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: auth-web
-          image: ghcr.io/liberte-top/service-auth-web:sha-4dfe454d6891d098ab20315909a8ebb820d6cb8a
+          image: ghcr.io/liberte-top/service-auth-web:sha-7e9438059377c7d21ba2cdc5c622671acd2c8d29
           imagePullPolicy: Always
           ports:
             - containerPort: 80
