@@ -24,15 +24,26 @@ spec:
               value: "3333"
             - name: FORWARDAUTH_SESSION_COOKIE_NAME
               value: "liberte_session"
-            - name: FORWARDAUTH_SESSION_COOKIE_VALUE
-              value: "demo-smoke-session"
             - name: FORWARDAUTH_LOGIN_URL
               value: "https://auth.liberte.top/"
+            - name: EMAIL_FROM
+              value: "Auth <auth@mail.liberte.top>"
+            - name: EMAIL_VERIFY_BASE_URL
+              value: "https://auth.liberte.top/api/v1/auth/verify/email"
+            - name: EMAIL_LOGIN_BASE_URL
+              value: "https://auth.liberte.top/api/v1/auth/login/email/complete"
+            - name: EMAIL_TOKEN_TTL_SECS
+              value: "900"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: auth-api-env
                   key: DATABASE_URL
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-api-env
+                  key: RESEND_API_KEY
           ports:
             - containerPort: 3333
               name: http

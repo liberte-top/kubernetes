@@ -18,6 +18,7 @@ env:
   POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
   POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
   AUTH_PUBLIC_BASE_URL: https://auth.liberte.top
 
 jobs:
@@ -65,6 +66,7 @@ jobs:
           test -n "$POSTGRES_DB"
           test -n "$POSTGRES_USER"
           test -n "$POSTGRES_PASSWORD"
+          test -n "$RESEND_API_KEY"
 
           DB_USER_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_USER"], safe=""))')"
           DB_PASS_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_PASSWORD"], safe=""))')"
@@ -76,7 +78,7 @@ jobs:
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
           retry 3 ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${POSTGRES_DB}' --from-literal=POSTGRES_USER='${POSTGRES_USER}' --from-literal=POSTGRES_PASSWORD='${POSTGRES_PASSWORD}' --dry-run=client -o yaml | kubectl apply -f -"
-          retry 3 ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --dry-run=client -o yaml | kubectl apply -f -"
+          retry 3 ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --from-literal=RESEND_API_KEY='${RESEND_API_KEY}' --dry-run=client -o yaml | kubectl apply -f -"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
