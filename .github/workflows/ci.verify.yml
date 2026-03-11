@@ -70,7 +70,8 @@ jobs:
           set -euo pipefail
           RELEASE_SHA="${GITHUB_SHA}"
           REMOTE_TMPDIR="/tmp/liberte-k8s-${RELEASE_SHA}"
-          trap 'ssh "$SSH_DEST" "rm -rf ${REMOTE_TMPDIR}" || true' EXIT
+          LOCAL_TMPDIR="$(mktemp -d)"
+          trap 'rm -rf "$LOCAL_TMPDIR"; ssh "$SSH_DEST" "rm -rf ${REMOTE_TMPDIR}" || true' EXIT
 
           retry() {
             local attempts="$1"
@@ -96,8 +97,12 @@ jobs:
           DB_PASS_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_PASSWORD"], safe=""))')"
           DATABASE_URL="postgres://${DB_USER_ENCODED}:${DB_PASS_ENCODED}@postgres.core.svc.cluster.local:5432/${POSTGRES_DB}"
 
+          cp -R manifests "$LOCAL_TMPDIR/manifests"
+          helm template service-auth ./charts/service/auth --namespace service > "$LOCAL_TMPDIR/manifests/service/auth/rendered.yaml"
+          helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke/rendered.yaml"
+
           retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
-          retry 3 rsync -az manifests/ "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
+          retry 3 rsync -az "$LOCAL_TMPDIR/manifests/" "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
