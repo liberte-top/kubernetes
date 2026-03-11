@@ -42,9 +42,9 @@ jobs:
           set -euo pipefail
           helm lint ./charts/service/auth
           helm lint ./charts/app/smoke
-          mkdir -p ./manifests/service/auth ./manifests/service/smoke
-          helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth/rendered.yaml
-          helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke/rendered.yaml
+          mkdir -p ./manifests/service
+          helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth.yaml
+          helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke.yaml
 
       - name: Install SSH key
         run: |
@@ -94,8 +94,8 @@ jobs:
           DATABASE_URL="postgres://${DB_USER_ENCODED}:${DB_PASS_ENCODED}@postgres.core.svc.cluster.local:5432/${POSTGRES_DB}"
 
           cp -R manifests "$LOCAL_TMPDIR/manifests"
-          helm template service-auth ./charts/service/auth --namespace service > "$LOCAL_TMPDIR/manifests/service/auth/rendered.yaml"
-          helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke/rendered.yaml"
+          helm template service-auth ./charts/service/auth --namespace service > "$LOCAL_TMPDIR/manifests/service/auth.yaml"
+          helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke.yaml"
 
           retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           retry 3 rsync -az "$LOCAL_TMPDIR/manifests/" "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"

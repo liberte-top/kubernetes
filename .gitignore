@@ -9,5 +9,5 @@
 *.swo
 
 # Generated Helm render output
-manifests/service/auth/rendered.yaml
-manifests/service/smoke/rendered.yaml
+manifests/service/auth.yaml
+manifests/service/smoke.yaml

@@ -10,10 +10,9 @@ if ! command -v helm >/dev/null 2>&1; then
   exit 1
 fi
 
-mkdir -p "${ROOT_DIR}/manifests/service/auth"
-mkdir -p "${ROOT_DIR}/manifests/service/smoke"
+mkdir -p "${ROOT_DIR}/manifests/service"
 
-helm template service-auth "${ROOT_DIR}/charts/service/auth" --namespace service > "${ROOT_DIR}/manifests/service/auth/rendered.yaml"
-helm template app-smoke "${ROOT_DIR}/charts/app/smoke" --namespace service > "${ROOT_DIR}/manifests/service/smoke/rendered.yaml"
+helm template service-auth "${ROOT_DIR}/charts/service/auth" --namespace service > "${ROOT_DIR}/manifests/service/auth.yaml"
+helm template app-smoke "${ROOT_DIR}/charts/app/smoke" --namespace service > "${ROOT_DIR}/manifests/service/smoke.yaml"
 
-echo "Rendered Helm manifests into manifests/service/{auth,smoke}/rendered.yaml"
+echo "Rendered Helm manifests into manifests/service/{auth,smoke}.yaml"

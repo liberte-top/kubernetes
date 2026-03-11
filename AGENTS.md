@@ -37,10 +37,8 @@ kubernetes/
 │   ├── argocd/
 │   └── service/
 │       ├── namespace.yaml
-│       ├── auth/
-│       │   └── kustomization.yaml
-│       └── smoke/
-│           └── kustomization.yaml
+│       ├── auth.yaml         # Generated locally/CI from Helm source
+│       └── smoke.yaml        # Generated locally/CI from Helm source
 ├── scripts/                  # Operational entrypoints and local tooling
 │   ├── kubectl.sh            # Single kubectl runtime wrapper (SSH tunnel reuse)
 │   ├── render-helm.sh        # Generates Helm-managed rendered manifests locally
