@@ -5,10 +5,18 @@ metadata:
   namespace: argocd
 spec:
   project: liberte-top
-  source:
-    repoURL: https://github.com/liberte-top/kubernetes.git
-    targetRevision: main
-    path: manifests/service
+  sources:
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
+      path: manifests/service/namespace
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
+      path: charts/service/auth
+      helm: {}
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
+      path: charts/app/smoke
+      helm: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: service
