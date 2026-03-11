@@ -104,6 +104,8 @@ kubernetes/
 - Keep service layer deployable at all times, even during refactor.
 - If service modules are reintroduced, keep kustomization composition explicit and reviewable.
 - Keep `manifests/argocd` as prepared GitOps resources until ArgoCD becomes the active reconciler.
+- For the current experiment, runtime data may be reset or discarded freely when needed for auth flow validation or recovery.
+- Even in that experimental mode, release integrity still matters: do not bypass the normal CI/image-promotion path with manual one-off image publishing or cluster-only hotfixes unless explicitly directed.
 
 ## Troubleshooting
 - Missing `.env`: copy from `.env.example` and fill in SSH settings before running helper scripts.
