@@ -6,9 +6,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.ingress.protected.middlewareRef | quote }}
-{{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-{{- end }}
+{{ include "app-smoke.ingressAnnotations" . | indent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -22,10 +20,7 @@ spec:
                 name: {{ include "app-smoke.componentName" (dict "root" . "component" "web") }}
                 port:
                   number: {{ .Values.web.service.port }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ .Values.ingress.tlsSecretName }}
+{{ include "app-smoke.ingressTls" . | indent 2 }}
 ---
 {{- end }}
 {{- if .Values.ingress.public.enabled }}
@@ -35,9 +30,7 @@ metadata:
   name: {{ include "app-smoke.fullname" . }}-public
   namespace: {{ .Values.namespace }}
   annotations:
-{{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-{{- end }}
+{{ include "app-smoke.ingressAnnotations" . | indent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -51,8 +44,5 @@ spec:
                 name: {{ include "app-smoke.componentName" (dict "root" . "component" "api") }}
                 port:
                   number: {{ .Values.api.service.port }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ .Values.ingress.tlsSecretName }}
+{{ include "app-smoke.ingressTls" . | indent 2 }}
 {{- end }}

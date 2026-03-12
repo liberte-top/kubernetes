@@ -4,9 +4,7 @@ metadata:
   name: {{ include "service-auth.fullname" . }}
   namespace: {{ .Values.namespace }}
   annotations:
-{{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-{{- end }}
+{{ include "service-auth.ingressAnnotations" . | indent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -20,7 +18,4 @@ spec:
                 name: {{ include "service-auth.componentName" (dict "root" . "component" "web") }}
                 port:
                   number: {{ .Values.web.service.port }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ .Values.ingress.tlsSecretName }}
+{{ include "service-auth.ingressTls" . | indent 2 }}

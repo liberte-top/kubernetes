@@ -90,3 +90,16 @@ spec:
       port: {{ $values.service.port }}
       targetPort: {{ $values.port }}
 {{- end -}}
+
+{{- define "app-smoke.ingressAnnotations" -}}
+{{- range $key, $value := .Values.ingress.annotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end -}}
+
+{{- define "app-smoke.ingressTls" -}}
+tls:
+  - hosts:
+      - {{ .Values.ingress.host }}
+    secretName: {{ .Values.ingress.tlsSecretName }}
+{{- end -}}

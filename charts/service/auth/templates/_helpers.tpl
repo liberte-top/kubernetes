@@ -99,3 +99,16 @@ spec:
       port: {{ $values.service.port }}
       targetPort: {{ $values.port }}
 {{- end -}}
+
+{{- define "service-auth.ingressAnnotations" -}}
+{{- range $key, $value := .Values.ingress.annotations }}
+{{ $key }}: {{ $value | quote }}
+{{- end }}
+{{- end -}}
+
+{{- define "service-auth.ingressTls" -}}
+tls:
+  - hosts:
+      - {{ .Values.ingress.host }}
+    secretName: {{ .Values.ingress.tlsSecretName }}
+{{- end -}}
