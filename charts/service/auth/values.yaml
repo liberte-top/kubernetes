@@ -28,6 +28,7 @@ api:
   env:
     PORT: "3333"
     FORWARDAUTH_SESSION_COOKIE_NAME: liberte_session
+    FORWARDAUTH_SESSION_COOKIE_DOMAIN: .liberte.top
     FORWARDAUTH_LOGIN_URL: https://auth.liberte.top/
     EMAIL_FROM: Auth <auth@mail.liberte.top>
     EMAIL_VERIFY_BASE_URL: https://auth.liberte.top/api/v1/auth/verify/email
