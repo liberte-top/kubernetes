@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "commonLabels", "podAnnotations", "app", "api", "web", "middleware", "ingress"],
+  "properties": {
+    "namespace": { "type": "string", "minLength": 1 },
+    "commonLabels": { "type": "object", "additionalProperties": { "type": "string" } },
+    "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 } }
+    },
+    "api": { "$ref": "#/definitions/component" },
+    "web": { "$ref": "#/definitions/component" },
+    "middleware": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "name", "address", "authResponseHeaders"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "name": { "type": "string", "minLength": 1 },
+        "address": { "type": "string", "minLength": 1 },
+        "authResponseHeaders": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["className", "host", "tls", "annotations", "protected", "public"],
+      "properties": {
+        "className": { "type": "string", "minLength": 1 },
+        "host": { "type": "string", "minLength": 1 },
+        "tls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "secretName"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string", "minLength": 1 }
+          }
+        },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "protected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "middlewareRef"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "middlewareRef": { "type": "string", "minLength": 1 }
+          }
+        },
+        "public": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "path", "pathType"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "path": { "type": "string", "minLength": 1 },
+            "pathType": { "type": "string", "enum": ["Exact", "Prefix", "ImplementationSpecific"] }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "tag", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string", "minLength": 1 },
+        "pullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "servicePort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["port"],
+      "properties": { "port": { "type": "integer", "minimum": 1 } }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "initialDelaySeconds", "periodSeconds"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "initialDelaySeconds": { "type": "integer", "minimum": 0 },
+        "periodSeconds": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests", "limits"],
+      "properties": {
+        "requests": { "type": "object", "additionalProperties": { "type": "string" } },
+        "limits": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "replicaCount", "image", "port", "service", "readinessProbe", "livenessProbe", "resources"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "replicaCount": { "type": "integer", "minimum": 0 },
+        "image": { "$ref": "#/definitions/image" },
+        "port": { "type": "integer", "minimum": 1 },
+        "service": { "$ref": "#/definitions/servicePort" },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
+        "readinessProbe": { "$ref": "#/definitions/probe" },
+        "livenessProbe": { "$ref": "#/definitions/probe" },
+        "resources": { "$ref": "#/definitions/resources" }
+      }
+    }
+  }
+}
