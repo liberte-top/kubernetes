@@ -9,7 +9,9 @@ app:
 ingress:
   className: traefik
   host: auth.liberte.top
-  tlsSecretName: auth-liberte-top-tls
+  tls:
+    enabled: true
+    secretName: auth-liberte-top-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 

@@ -74,7 +74,9 @@ middleware:
 ingress:
   className: traefik
   host: smoke.liberte.top
-  tlsSecretName: smoke-liberte-top-tls
+  tls:
+    enabled: true
+    secretName: smoke-liberte-top-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
   protected:

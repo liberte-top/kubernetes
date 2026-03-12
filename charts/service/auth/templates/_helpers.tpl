@@ -107,8 +107,10 @@ spec:
 {{- end -}}
 
 {{- define "service-auth.ingressTls" -}}
+{{- if .Values.ingress.tls.enabled }}
 tls:
   - hosts:
       - {{ .Values.ingress.host }}
-    secretName: {{ .Values.ingress.tlsSecretName }}
+    secretName: {{ .Values.ingress.tls.secretName }}
+{{- end }}
 {{- end -}}
