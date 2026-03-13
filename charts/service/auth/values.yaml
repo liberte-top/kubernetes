@@ -100,7 +100,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-auth-web
-    tag: sha-c1d6829a4d3571a100dc926e548bd3d86917b97d # auth-web-image
+    tag: sha-bb2a2c51a08774c10a706f12bfb19213ea4f8b02 # auth-web-image
     pullPolicy: Always
   port: 80
   service:
