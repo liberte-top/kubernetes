@@ -25,8 +25,12 @@ api:
   port: 3333
   service:
     port: 3333
+    portName: http
+  probe:
+    type: http
   env:
     PORT: "3333"
+    MAIL_GRPC_ADDR: http://auth-mail:50051
     FORWARDAUTH_SESSION_COOKIE_NAME: liberte_session
     FORWARDAUTH_SESSION_COOKIE_DOMAIN: .liberte.top
     FORWARDAUTH_LOGIN_URL: https://auth.liberte.top/
@@ -57,6 +61,40 @@ api:
       cpu: 250m
       memory: 256Mi
 
+mail:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/service-auth-mail
+    tag: sha-745508ea26d486795f310de326194dd361453933 # auth-mail-image
+    pullPolicy: Always
+  port: 50051
+  service:
+    port: 50051
+    portName: grpc
+  probe:
+    type: tcp
+  env:
+    PORT: "50051"
+    EMAIL_FROM: Auth <auth@mail.liberte.top>
+  secretEnv:
+    RESEND_API_KEY:
+      secretName: auth-api-env
+      secretKey: RESEND_API_KEY
+  readinessProbe:
+    initialDelaySeconds: 3
+    periodSeconds: 5
+  livenessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
 web:
   enabled: true
   replicaCount: 1
@@ -67,6 +105,9 @@ web:
   port: 80
   service:
     port: 80
+    portName: http
+  probe:
+    type: http
   readinessProbe:
     path: /
     initialDelaySeconds: 2

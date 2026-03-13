@@ -1,3 +1,6 @@
 {{- if .Values.api.enabled }}
 {{ include "service-auth.component" (dict "root" . "name" "api" "values" .Values.api) }}
 {{- end }}
+{{- if .Values.mail.enabled }}
+{{ include "service-auth.component" (dict "root" . "name" "mail" "values" .Values.mail) }}
+{{- end }}

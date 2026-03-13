@@ -19,6 +19,8 @@ app.kubernetes.io/managed-by: Helm
 {{- $root := .root -}}
 {{- $name := .name -}}
 {{- $values := .values -}}
+{{- $servicePortName := default "http" $values.service.portName -}}
+{{- $probeType := default "http" $values.probe.type -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,7 +66,8 @@ spec:
 {{- end }}
           ports:
             - containerPort: {{ $values.port }}
-              name: http
+              name: {{ $servicePortName }}
+{{- if eq $probeType "http" }}
           readinessProbe:
             httpGet:
               path: {{ $values.readinessProbe.path }}
@@ -77,6 +80,18 @@ spec:
               port: {{ $values.port }}
             initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ $values.livenessProbe.periodSeconds }}
+{{- else if eq $probeType "tcp" }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ $values.port }}
+            initialDelaySeconds: {{ $values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $values.readinessProbe.periodSeconds }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ $values.port }}
+            initialDelaySeconds: {{ $values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ $values.livenessProbe.periodSeconds }}
+{{- end }}
 {{- with $values.resources }}
           resources:
 {{ toYaml . | indent 12 }}
@@ -95,7 +110,7 @@ spec:
   selector:
     app: {{ include "service-auth.componentName" (dict "root" $root "component" $name) }}
   ports:
-    - name: http
+    - name: {{ $servicePortName }}
       port: {{ $values.service.port }}
       targetPort: {{ $values.port }}
 {{- end -}}
