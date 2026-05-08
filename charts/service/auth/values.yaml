@@ -68,7 +68,7 @@ mail:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-mail
-    tag: sha-d4a53a1c5f7fda4841252c608e27b46b111e44ae # service-mail-image
+    tag: sha-0b91214c98e19bc0d75e8d9b1cae7b8f5ddfdcde # service-mail-image
     pullPolicy: Always
   port: 50051
   service:
