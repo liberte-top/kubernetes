@@ -2,11 +2,15 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["namespace", "commonLabels", "podAnnotations", "app", "ingress", "api", "mail", "web"],
+  "required": ["namespace", "commonLabels", "podAnnotations", "imagePullSecrets", "app", "ingress", "api", "mail", "web"],
   "properties": {
     "namespace": { "type": "string", "minLength": 1 },
     "commonLabels": { "type": "object", "additionalProperties": { "type": "string" } },
     "podAnnotations": { "type": "object", "additionalProperties": { "type": "string" } },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
     "app": {
       "type": "object",
       "additionalProperties": false,

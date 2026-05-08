@@ -2,6 +2,8 @@ namespace: service
 
 commonLabels: {}
 podAnnotations: {}
+imagePullSecrets:
+  - packages-ghcr-pull
 
 app:
   name: auth

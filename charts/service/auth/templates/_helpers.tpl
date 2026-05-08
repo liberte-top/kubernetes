@@ -44,6 +44,12 @@ spec:
 {{ toYaml . | indent 8 }}
 {{- end }}
     spec:
+{{- if $root.Values.imagePullSecrets }}
+      imagePullSecrets:
+{{- range $root.Values.imagePullSecrets }}
+        - name: {{ . }}
+{{- end }}
+{{- end }}
       containers:
         - name: {{ include "service-auth.componentName" (dict "root" $root "component" $name) }}
           image: {{ $values.image.repository }}:{{ $values.image.tag }}
