@@ -24,6 +24,7 @@
 - Execution entry is `scripts/kubectl.sh`.
 - Kubernetes desired state lives in `manifests/`, with Helm source for service/app layer workloads living in `charts/`.
 - Helm-managed rendered manifests are generated locally with `scripts/render-helm.sh` and in CI temp workspaces; they are no longer committed to git.
+- Runtime application secrets are represented by SealedSecrets in `manifests/*/secrets.yaml`; plaintext Secret manifests do not belong in git.
 
 ## Repository Structure (Refactor Map)
 Use this as the baseline module map before iterative refactor.
@@ -75,14 +76,36 @@ kubernetes/
 - `./scripts/kubectl.sh tunnel status`
 - `./scripts/kubectl.sh tunnel restart`
 - `./scripts/render-helm.sh`
+- `./scripts/seal.sh cert`
+- `./scripts/seal.sh service`
+- `./scripts/seal.sh core`
+- `./scripts/seal.sh check`
 - `./scripts/ssh.sh`
 - `./scripts/ssh.sh uname -a`
-- `./scripts/seal.sh check`
 - `./scripts/kubectl.sh`
 - `./scripts/kubectl.sh get nodes -o wide`
 - `./scripts/kubectl.sh apply -k manifests --dry-run=server`
 - `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
 - `./scripts/kubectl.sh -n core get statefulset,svc,secret`
+
+## Secret Management
+- Bitnami Sealed Secrets is the single declarative runtime secret path.
+- The controller is a cluster-level system component in `kube-system`, declared at `manifests/system/sealed.yaml`.
+- The public sealing certificate is committed at `certs/seal.pem`; it is not secret.
+- The controller private-key Secret backup is operator-owned and must stay outside git. Do not commit files like `sealed-secrets-key*.yaml`.
+- Encrypted secret placeholders live close to the workloads:
+  - `manifests/core/secrets.yaml`: `postgres`
+  - `manifests/service/secrets.yaml`: `auth-api-env`, `packages-verdaccio-env`, `packages-verdaccio-auth`, `packages-ghcr-pull`
+- Use `scripts/seal.sh` as the only sealing entrypoint:
+  - `./scripts/seal.sh cert`: refresh `certs/seal.pem` from the live controller key Secret.
+  - `./scripts/seal.sh backup-key [dir]`: export the controller key Secret as raw YAML for operator backup.
+  - `./scripts/seal.sh core`: reseal current live `core` Secrets into `manifests/core/secrets.yaml`.
+  - `./scripts/seal.sh service`: reseal current live `service` Secrets into `manifests/service/secrets.yaml`.
+  - `./scripts/seal.sh all`: reseal both groups.
+  - `./scripts/seal.sh check`: verify the cert and SealedSecret manifests are renderable.
+- When rotating a secret, update the live Kubernetes Secret through an explicit operator action, run the relevant `seal.sh` command, review the encrypted diff, and merge it through PR.
+- Secret changes do not automatically restart all consumers. If a workload reads a Secret through env vars, restart the affected Deployment or make a pod-template change after the SealedSecret lands.
+- Never print, log, paste, or commit secret values. Command output should show Secret names or key names only.
 
 ## Kubectl Tunnel Workflow
 - `scripts/kubectl.sh` uses SSH `ControlMaster/ControlPersist` tunnel reuse with fixed local port.
