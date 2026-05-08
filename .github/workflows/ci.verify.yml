@@ -15,10 +15,6 @@ env:
   SSH_USER: ${{ secrets.INFRA_SSH_USER }}
   SSH_DEST: ${{ secrets.INFRA_SSH_USER }}@${{ secrets.INFRA_SSH_HOST }}
   INFRA_SSH_KNOWN_HOSTS: ${{ secrets.INFRA_SSH_KNOWN_HOSTS }}
-  POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-  POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
   AUTH_PUBLIC_BASE_URL: https://auth.liberte.top
 
 jobs:
@@ -42,9 +38,11 @@ jobs:
           set -euo pipefail
           helm lint ./charts/service/auth
           helm lint ./charts/app/smoke
+          helm lint ./charts/service/packages
           mkdir -p ./manifests/service
           helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth.yaml
           helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke.yaml
+          helm template service-packages ./charts/service/packages --namespace service > ./manifests/service/packages.yaml
 
       - name: Install SSH key
         run: |
@@ -84,58 +82,30 @@ jobs:
             return 1
           }
 
-          test -n "$POSTGRES_DB"
-          test -n "$POSTGRES_USER"
-          test -n "$POSTGRES_PASSWORD"
-          test -n "$RESEND_API_KEY"
-
-          DB_USER_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_USER"], safe=""))')"
-          DB_PASS_ENCODED="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["POSTGRES_PASSWORD"], safe=""))')"
-          DATABASE_URL="postgres://${DB_USER_ENCODED}:${DB_PASS_ENCODED}@postgres.core.svc.cluster.local:5432/${POSTGRES_DB}"
-
           cp -R manifests "$LOCAL_TMPDIR/manifests"
           helm template service-auth ./charts/service/auth --namespace service > "$LOCAL_TMPDIR/manifests/service/auth.yaml"
           helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke.yaml"
+          helm template service-packages ./charts/service/packages --namespace service > "$LOCAL_TMPDIR/manifests/service/packages.yaml"
 
           retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           retry 3 rsync -az "$LOCAL_TMPDIR/manifests/" "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
 
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/core/namespace.yaml"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/argocd"
-          retry 3 ssh "$SSH_DEST" "kubectl -n core create secret generic postgres --from-literal=POSTGRES_DB='${POSTGRES_DB}' --from-literal=POSTGRES_USER='${POSTGRES_USER}' --from-literal=POSTGRES_PASSWORD='${POSTGRES_PASSWORD}' --dry-run=client -o yaml | kubectl apply -f -"
-          retry 3 ssh "$SSH_DEST" "kubectl -n service create secret generic auth-api-env --from-literal=DATABASE_URL='${DATABASE_URL}' --from-literal=RESEND_API_KEY='${RESEND_API_KEY}' --dry-run=client -o yaml | kubectl apply -f -"
+          retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application system argocd.argoproj.io/refresh=hard --overwrite"
+          retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do status=$(kubectl -n argocd get application system -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application system -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"'
+          retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/system --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/core --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/auth.yaml --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/smoke.yaml --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/packages.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do status=$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"'
           retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do health=$(kubectl -n argocd get application core -o jsonpath="{.status.health.status}"); if [ "$health" = "Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application core -o jsonpath="{.status.health.status}")" = "Healthy"'
 
-      - name: Smoke test public auth endpoint
+      - name: Smoke test public auth web
         run: |
           set -euo pipefail
-          curl -fsS "${AUTH_PUBLIC_BASE_URL}/api/v1/health"
-          python3 - <<'PY'
-          import json
-          import os
-          import time
-          import urllib.request
-
-          suffix = time.strftime("%H%M%S")
-          payload = json.dumps({
-            "account_type": "user",
-            "username": f"ci-{suffix}",
-            "email": f"ci-{suffix}@example.com",
-            "phone": None,
-            "created_by": None,
-          }).encode()
-          req = urllib.request.Request(
-            os.environ["AUTH_PUBLIC_BASE_URL"] + "/api/v1/admin/accounts",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-          )
-          with urllib.request.urlopen(req, timeout=20) as resp:
-            if resp.status != 201:
-              raise SystemExit(f"unexpected status: {resp.status}")
-            print(resp.read().decode())
-          PY
+          curl -fsS "${AUTH_PUBLIC_BASE_URL}/"

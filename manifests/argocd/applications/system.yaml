@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: system
+  namespace: argocd
+spec:
+  project: liberte-top
+  source:
+    repoURL: https://github.com/liberte-top/kubernetes.git
+    targetRevision: main
+    path: manifests/system
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=false

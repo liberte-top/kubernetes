@@ -108,6 +108,8 @@ web:
     portName: http
   probe:
     type: http
+  env:
+    AUTH_API_INTERNAL_URL: http://auth-api:3333
   readinessProbe:
     path: /
     initialDelaySeconds: 2

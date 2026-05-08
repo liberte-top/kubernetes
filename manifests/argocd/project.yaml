@@ -8,6 +8,8 @@ spec:
   sourceRepos:
     - https://github.com/liberte-top/kubernetes.git
   destinations:
+    - namespace: kube-system
+      server: https://kubernetes.default.svc
     - namespace: core
       server: https://kubernetes.default.svc
     - namespace: service
