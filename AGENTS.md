@@ -95,7 +95,7 @@ kubernetes/
 - The controller private-key Secret backup is operator-owned and must stay outside git. Do not commit files like `sealed-secrets-key*.yaml`.
 - Encrypted secret placeholders live close to the workloads:
   - `manifests/core/secrets.yaml`: `postgres`
-  - `manifests/service/secrets.yaml`: `auth-api-env`, `packages-verdaccio-env`, `packages-verdaccio-auth`, `packages-ghcr-pull`
+  - `manifests/service/secrets.yaml`: `auth-api-env`, `registry-admin-env`, `packages-verdaccio-env`, `packages-verdaccio-auth`, `packages-ghcr-pull`
 - Use `scripts/seal.sh` as the only sealing entrypoint:
   - `./scripts/seal.sh cert`: refresh `certs/seal.pem` from the live controller key Secret.
   - `./scripts/seal.sh backup-key [dir]`: export the controller key Secret as raw YAML for operator backup.

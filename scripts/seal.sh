@@ -143,6 +143,7 @@ seal_core() {
 seal_service() {
   seal_group service "${ROOT_DIR}/manifests/service/secrets.yaml" \
     auth-api-env \
+    registry-admin-env \
     packages-verdaccio-env \
     packages-verdaccio-auth \
     packages-ghcr-pull
