@@ -99,7 +99,7 @@
     "verdaccio": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled", "replicaCount", "image", "port", "service", "secretName", "authSecretName", "s3", "readinessProbe", "livenessProbe", "resources"],
+      "required": ["enabled", "replicaCount", "image", "port", "service", "secretName", "authSecretName", "auth", "s3", "readinessProbe", "livenessProbe", "resources"],
       "properties": {
         "enabled": { "type": "boolean" },
         "replicaCount": { "type": "integer", "minimum": 0 },
@@ -115,6 +115,14 @@
         },
         "secretName": { "type": "string", "minLength": 1 },
         "authSecretName": { "type": "string", "minLength": 1 },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxUsers"],
+          "properties": {
+            "maxUsers": { "type": "integer", "minimum": -1 }
+          }
+        },
         "s3": {
           "type": "object",
           "additionalProperties": false,

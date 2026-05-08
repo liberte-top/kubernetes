@@ -58,6 +58,8 @@ verdaccio:
     port: 4873
   secretName: packages-verdaccio-env
   authSecretName: packages-verdaccio-auth
+  auth:
+    maxUsers: 2
   s3:
     envFromSecret: true
     ensureBucket: false
