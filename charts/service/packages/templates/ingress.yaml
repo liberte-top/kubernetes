@@ -15,7 +15,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "packages.componentName" (dict "root" . "component" "verdaccio") }}
+                name: {{ include "packages.componentName" (dict "root" . "component" "api") }}
                 port:
-                  number: {{ .Values.verdaccio.service.port }}
+                  number: {{ .Values.api.service.port }}
 {{ include "packages.ingressTls" . | indent 2 }}

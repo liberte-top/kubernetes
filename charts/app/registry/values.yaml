@@ -21,13 +21,20 @@ api:
   env:
     PORT: "4320"
     REGISTRY_ADMIN_SCOPE: registry:admin
-    VERDACCIO_INTERNAL_URL: http://packages-verdaccio:4873
-    VERDACCIO_PUBLIC_URL: https://packages.liberte.top
+    MINI_PACKAGES_INTERNAL_URL: http://packages-api:3333
+    MINI_PACKAGES_PUBLIC_URL: https://packages.liberte.top
     KELLNR_INTERNAL_URL: http://crates-kellnr:8000
     KELLNR_PUBLIC_URL: https://crates.liberte.top
-  envFromSecrets:
-    - name: registry-admin-env
-      optional: true
+    KELLNR_ADMIN_USERNAME: admin
+  envSecretRefs:
+    MINI_PACKAGES_ADMIN_TOKEN:
+      secretName: packages-api-env
+      secretKey: BOOTSTRAP_ADMIN_TOKEN
+      optional: false
+    KELLNR_ADMIN_PASSWORD:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_SETUP__ADMIN_PWD
+      optional: false
   readinessProbe:
     path: /api/v1/health
     initialDelaySeconds: 3

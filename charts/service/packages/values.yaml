@@ -2,72 +2,25 @@ namespace: service
 
 commonLabels: {}
 podAnnotations: {}
-imagePullSecrets:
-  - packages-ghcr-pull
+imagePullSecrets: []
 
 app:
   name: packages
 
-minio:
-  enabled: false
+api:
   replicaCount: 1
   image:
-    repository: quay.io/minio/minio
-    tag: RELEASE.2025-09-07T16-13-09Z
-    pullPolicy: IfNotPresent
-  port: 9000
-  consolePort: 9001
-  service:
-    port: 9000
-    consolePort: 9001
-  secretName: packages-minio-env
-  bucket: verdaccio
-  persistence:
-    size: 10Gi
-  readinessProbe:
-    path: /minio/health/ready
-    initialDelaySeconds: 5
-    periodSeconds: 10
-  livenessProbe:
-    path: /minio/health/live
-    initialDelaySeconds: 15
-    periodSeconds: 20
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-mc:
-  image:
-    repository: quay.io/minio/mc
-    tag: RELEASE.2025-08-13T08-35-41Z
-    pullPolicy: IfNotPresent
-
-verdaccio:
-  enabled: true
-  replicaCount: 1
-  image:
-    repository: ghcr.io/liberte-top/verdaccio-s3
-    tag: minio-poc-v5-20260508
+    repository: ghcr.io/perishcode/mini-packages-api
+    tag: latest # packages-api-image
     pullPolicy: Always
-  port: 4873
+  port: 3333
   service:
-    port: 4873
-  secretName: packages-verdaccio-env
-  authSecretName: packages-verdaccio-auth
-  auth:
-    maxUsers: 2
-  s3:
-    envFromSecret: true
-    ensureBucket: false
-    bucket: configured-by-secret
-    keyPrefix: npm/
-    region: auto
-    endpoint: configured-by-secret
-    forcePathStyle: true
+    port: 3333
+  secretName: packages-api-env
+  env:
+    PORT: "3333"
+    REGISTRY_PUBLIC_URL: https://packages.liberte.top
+    S3_FORCE_PATH_STYLE: "true"
   readinessProbe:
     path: /-/ping
     initialDelaySeconds: 5
