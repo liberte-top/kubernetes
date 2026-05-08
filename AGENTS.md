@@ -7,7 +7,7 @@
 ## Current Flow
 - This repository now deploys the live `service.auth` stack.
 - Default Kustomize apply includes `manifests/system`, `manifests/core`, and declarative service secrets.
-- `service/auth`, `app/smoke`, and `service/packages` are deployed by ArgoCD from Helm sources.
+- `service/auth`, `app/smoke`, `app/registry`, and `service/packages` are deployed by ArgoCD from Helm sources.
 - Use `scripts/kubectl.sh` for remote cluster operations via SSH tunnel reuse.
 
 ## 60-Second Local Start
@@ -125,6 +125,7 @@ kubernetes/
 - `service.auth` workflows open image-promotion PRs into this repository.
 - `service.auth` image promotion updates Helm values under `charts/service/auth/`.
 - `app.smoke` image promotion updates Helm values under `charts/app/smoke/`.
+- `app.registry` image promotion updates Helm values under `charts/app/registry/`.
 - `packages` registry manifests live under `charts/service/packages/`; runtime secrets are represented as SealedSecrets in `manifests/service/secrets.yaml`.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
 - `.github/workflows/ci.verify.yml` renders Helm-managed manifests in CI, validates them, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.

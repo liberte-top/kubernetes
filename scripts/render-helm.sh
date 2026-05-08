@@ -19,13 +19,16 @@ mkdir -p "${ROOT_DIR}/manifests/service"
 
 helm lint "${ROOT_DIR}/charts/service/auth"
 helm lint "${ROOT_DIR}/charts/app/smoke"
+helm lint "${ROOT_DIR}/charts/app/registry"
 helm lint "${ROOT_DIR}/charts/service/packages"
 
 helm template service-auth "${ROOT_DIR}/charts/service/auth" --namespace service > "${TMP_DIR}/auth.yaml"
 helm template app-smoke "${ROOT_DIR}/charts/app/smoke" --namespace service > "${TMP_DIR}/smoke.yaml"
+helm template app-registry "${ROOT_DIR}/charts/app/registry" --namespace service > "${TMP_DIR}/registry.yaml"
 helm template service-packages "${ROOT_DIR}/charts/service/packages" --namespace service > "${TMP_DIR}/packages.yaml"
 mv "${TMP_DIR}/auth.yaml" "${ROOT_DIR}/manifests/service/auth.yaml"
 mv "${TMP_DIR}/smoke.yaml" "${ROOT_DIR}/manifests/service/smoke.yaml"
+mv "${TMP_DIR}/registry.yaml" "${ROOT_DIR}/manifests/service/registry.yaml"
 mv "${TMP_DIR}/packages.yaml" "${ROOT_DIR}/manifests/service/packages.yaml"
 
-echo "Rendered Helm manifests into manifests/service/{auth,smoke,packages}.yaml"
+echo "Rendered Helm manifests into manifests/service/{auth,smoke,registry,packages}.yaml"

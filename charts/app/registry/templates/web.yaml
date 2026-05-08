@@ -1,0 +1,3 @@
+{{- if .Values.web.enabled }}
+{{ include "app-registry.component" (dict "root" . "name" "web" "values" .Values.web) }}
+{{- end }}
