@@ -1,0 +1,63 @@
+namespace: service
+
+commonLabels: {}
+podAnnotations: {}
+imagePullSecrets: []
+
+app:
+  name: crates
+
+kellnr:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/kellnr/kellnr
+    tag: "6.3.0"
+    pullPolicy: IfNotPresent
+  port: 8000
+  service:
+    port: 8000
+  secretName: crates-kellnr-env
+  dataDir: /var/lib/kellnr
+  env:
+    KELLNR_REGISTRY__DATA_DIR: /var/lib/kellnr
+    KELLNR_LOCAL__PORT: "8000"
+    KELLNR_ORIGIN__HOSTNAME: crates.liberte.top
+    KELLNR_ORIGIN__PORT: "443"
+    KELLNR_ORIGIN__PROTOCOL: https
+    KELLNR_POSTGRESQL__ENABLED: "true"
+    KELLNR_POSTGRESQL__ADDRESS: postgres.core.svc.cluster.local
+    KELLNR_POSTGRESQL__PORT: "5432"
+    KELLNR_POSTGRESQL__DB: kellnr
+    KELLNR_S3__ENABLED: "true"
+    KELLNR_S3__REGION: auto
+    KELLNR_S3__ALLOW_HTTP: "false"
+    KELLNR_REGISTRY__AUTH_REQUIRED: "true"
+    KELLNR_REGISTRY__NEW_CRATES_RESTRICTED: "true"
+    KELLNR_REGISTRY__ALLOW_OWNERLESS_CRATES: "false"
+    KELLNR_DOCS__ENABLED: "false"
+    KELLNR_PROXY__ENABLED: "false"
+  readinessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  livenessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  className: traefik
+  host: crates.liberte.top
+  tls:
+    enabled: true
+    secretName: crates-liberte-top-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod

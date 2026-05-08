@@ -40,11 +40,13 @@ jobs:
           helm lint ./charts/app/smoke
           helm lint ./charts/app/registry
           helm lint ./charts/service/packages
+          helm lint ./charts/service/crates
           mkdir -p ./manifests/service
           helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth.yaml
           helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke.yaml
           helm template app-registry ./charts/app/registry --namespace service > ./manifests/service/registry.yaml
           helm template service-packages ./charts/service/packages --namespace service > ./manifests/service/packages.yaml
+          helm template service-crates ./charts/service/crates --namespace service > ./manifests/service/crates.yaml
 
       - name: Install SSH key
         run: |
@@ -89,6 +91,7 @@ jobs:
           helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke.yaml"
           helm template app-registry ./charts/app/registry --namespace service > "$LOCAL_TMPDIR/manifests/service/registry.yaml"
           helm template service-packages ./charts/service/packages --namespace service > "$LOCAL_TMPDIR/manifests/service/packages.yaml"
+          helm template service-crates ./charts/service/crates --namespace service > "$LOCAL_TMPDIR/manifests/service/crates.yaml"
 
           retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
           retry 3 rsync -az "$LOCAL_TMPDIR/manifests/" "$SSH_DEST:${REMOTE_TMPDIR}/manifests/"
@@ -104,6 +107,7 @@ jobs:
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/smoke.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/registry.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/packages.yaml --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/crates.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" 'for i in $(seq 1 60); do status=$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}"); if [ "$status" = "Synced Healthy" ]; then break; fi; sleep 5; done; test "$(kubectl -n argocd get application service -o jsonpath="{.status.sync.status} {.status.health.status}")" = "Synced Healthy"'
