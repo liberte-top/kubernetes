@@ -1,0 +1,15 @@
+{{- if .Values.middleware.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ .Values.middleware.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  forwardAuth:
+    address: {{ .Values.middleware.address }}
+    trustForwardHeader: true
+    authResponseHeaders:
+{{- range .Values.middleware.authResponseHeaders }}
+      - {{ . }}
+{{- end }}
+{{- end }}

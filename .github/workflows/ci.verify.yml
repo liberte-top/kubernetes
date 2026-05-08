@@ -38,10 +38,12 @@ jobs:
           set -euo pipefail
           helm lint ./charts/service/auth
           helm lint ./charts/app/smoke
+          helm lint ./charts/app/registry
           helm lint ./charts/service/packages
           mkdir -p ./manifests/service
           helm template service-auth ./charts/service/auth --namespace service > ./manifests/service/auth.yaml
           helm template app-smoke ./charts/app/smoke --namespace service > ./manifests/service/smoke.yaml
+          helm template app-registry ./charts/app/registry --namespace service > ./manifests/service/registry.yaml
           helm template service-packages ./charts/service/packages --namespace service > ./manifests/service/packages.yaml
 
       - name: Install SSH key
@@ -85,6 +87,7 @@ jobs:
           cp -R manifests "$LOCAL_TMPDIR/manifests"
           helm template service-auth ./charts/service/auth --namespace service > "$LOCAL_TMPDIR/manifests/service/auth.yaml"
           helm template app-smoke ./charts/app/smoke --namespace service > "$LOCAL_TMPDIR/manifests/service/smoke.yaml"
+          helm template app-registry ./charts/app/registry --namespace service > "$LOCAL_TMPDIR/manifests/service/registry.yaml"
           helm template service-packages ./charts/service/packages --namespace service > "$LOCAL_TMPDIR/manifests/service/packages.yaml"
 
           retry 3 ssh "$SSH_DEST" "install -d -m 0755 ${REMOTE_TMPDIR}"
@@ -99,6 +102,7 @@ jobs:
           retry 3 ssh "$SSH_DEST" "kubectl apply -k ${REMOTE_TMPDIR}/manifests/service --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/auth.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/smoke.yaml --dry-run=server"
+          retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/registry.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl apply -f ${REMOTE_TMPDIR}/manifests/service/packages.yaml --dry-run=server"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application core argocd.argoproj.io/refresh=hard --overwrite"
           retry 3 ssh "$SSH_DEST" "kubectl -n argocd annotate application service argocd.argoproj.io/refresh=hard --overwrite"
