@@ -146,6 +146,7 @@ seal_service() {
     registry-admin-env \
     packages-verdaccio-env \
     packages-verdaccio-auth \
+    crates-kellnr-env \
     packages-ghcr-pull
 }
 

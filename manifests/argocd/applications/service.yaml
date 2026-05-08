@@ -25,6 +25,10 @@ spec:
       targetRevision: main
       path: charts/service/packages
       helm: {}
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
+      path: charts/service/crates
+      helm: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: service

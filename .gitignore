@@ -13,4 +13,5 @@ manifests/service/auth.yaml
 manifests/service/smoke.yaml
 manifests/service/packages.yaml
 manifests/service/registry.yaml
+manifests/service/crates.yaml
 manifests/service/*/rendered.yaml

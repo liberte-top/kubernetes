@@ -23,7 +23,7 @@ api:
     REGISTRY_ADMIN_SCOPE: registry:admin
     VERDACCIO_INTERNAL_URL: http://packages-verdaccio:4873
     VERDACCIO_PUBLIC_URL: https://packages.liberte.top
-    KELLNR_INTERNAL_URL: ""
+    KELLNR_INTERNAL_URL: http://crates-kellnr:8000
     KELLNR_PUBLIC_URL: https://crates.liberte.top
   envFromSecrets:
     - name: registry-admin-env

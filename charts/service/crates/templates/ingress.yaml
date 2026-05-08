@@ -1,0 +1,23 @@
+{{- if .Values.kellnr.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "crates.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+{{ include "crates.ingressAnnotations" . | indent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "crates.componentName" (dict "root" . "component" "kellnr") }}
+                port:
+                  number: {{ .Values.kellnr.service.port }}
+{{ include "crates.ingressTls" . | indent 2 }}
+{{- end }}
