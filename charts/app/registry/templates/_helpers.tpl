@@ -52,11 +52,23 @@ spec:
         - name: {{ include "app-registry.componentName" (dict "root" $root "component" $name) }}
           image: {{ $values.image.repository }}:{{ $values.image.tag }}
           imagePullPolicy: {{ $values.image.pullPolicy }}
-{{- with $values.env }}
+{{- if or $values.env $values.envSecretRefs }}
           env:
+{{- with $values.env }}
 {{- range $key, $value := . }}
             - name: {{ $key }}
               value: {{ $value | quote }}
+{{- end }}
+{{- end }}
+{{- with $values.envSecretRefs }}
+{{- range $name, $ref := . }}
+            - name: {{ $name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $ref.secretName }}
+                  key: {{ $ref.secretKey }}
+                  optional: {{ $ref.optional }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- with $values.envFromSecrets }}

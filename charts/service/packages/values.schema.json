@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["namespace", "commonLabels", "podAnnotations", "imagePullSecrets", "app", "minio", "mc", "verdaccio", "ingress"],
+  "required": ["namespace", "commonLabels", "podAnnotations", "imagePullSecrets", "app", "api", "ingress"],
   "properties": {
     "namespace": { "type": "string", "minLength": 1 },
     "commonLabels": { "type": "object", "additionalProperties": { "type": "string" } },
@@ -19,9 +19,7 @@
         "name": { "type": "string", "minLength": 1 }
       }
     },
-    "minio": { "$ref": "#/definitions/minio" },
-    "mc": { "$ref": "#/definitions/mc" },
-    "verdaccio": { "$ref": "#/definitions/verdaccio" },
+    "api": { "$ref": "#/definitions/api" },
     "ingress": { "$ref": "#/definitions/ingress" }
   },
   "definitions": {
@@ -54,54 +52,11 @@
         "periodSeconds": { "type": "integer", "minimum": 1 }
       }
     },
-    "minio": {
+    "api": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled", "replicaCount", "image", "port", "consolePort", "service", "secretName", "bucket", "persistence", "readinessProbe", "livenessProbe", "resources"],
+      "required": ["replicaCount", "image", "port", "service", "secretName", "env", "readinessProbe", "livenessProbe", "resources"],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "replicaCount": { "type": "integer", "minimum": 0 },
-        "image": { "$ref": "#/definitions/image" },
-        "port": { "type": "integer", "minimum": 1 },
-        "consolePort": { "type": "integer", "minimum": 1 },
-        "service": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["port", "consolePort"],
-          "properties": {
-            "port": { "type": "integer", "minimum": 1 },
-            "consolePort": { "type": "integer", "minimum": 1 }
-          }
-        },
-        "secretName": { "type": "string", "minLength": 1 },
-        "bucket": { "type": "string", "minLength": 1 },
-        "persistence": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["size"],
-          "properties": {
-            "size": { "type": "string", "minLength": 1 }
-          }
-        },
-        "readinessProbe": { "$ref": "#/definitions/probe" },
-        "livenessProbe": { "$ref": "#/definitions/probe" },
-        "resources": { "$ref": "#/definitions/resources" }
-      }
-    },
-    "mc": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["image"],
-      "properties": {
-        "image": { "$ref": "#/definitions/image" }
-      }
-    },
-    "verdaccio": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["enabled", "replicaCount", "image", "port", "service", "secretName", "authSecretName", "auth", "s3", "readinessProbe", "livenessProbe", "resources"],
-      "properties": {
-        "enabled": { "type": "boolean" },
         "replicaCount": { "type": "integer", "minimum": 0 },
         "image": { "$ref": "#/definitions/image" },
         "port": { "type": "integer", "minimum": 1 },
@@ -114,29 +69,7 @@
           }
         },
         "secretName": { "type": "string", "minLength": 1 },
-        "authSecretName": { "type": "string", "minLength": 1 },
-        "auth": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["maxUsers"],
-          "properties": {
-            "maxUsers": { "type": "integer", "minimum": -1 }
-          }
-        },
-        "s3": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["envFromSecret", "ensureBucket", "bucket", "keyPrefix", "region", "endpoint", "forcePathStyle"],
-          "properties": {
-            "envFromSecret": { "type": "boolean" },
-            "ensureBucket": { "type": "boolean" },
-            "bucket": { "type": "string", "minLength": 1 },
-            "keyPrefix": { "type": "string" },
-            "region": { "type": "string", "minLength": 1 },
-            "endpoint": { "type": "string", "minLength": 1 },
-            "forcePathStyle": { "type": "boolean" }
-          }
-        },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
         "readinessProbe": { "$ref": "#/definitions/probe" },
         "livenessProbe": { "$ref": "#/definitions/probe" },
         "resources": { "$ref": "#/definitions/resources" }
