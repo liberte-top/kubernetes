@@ -13,7 +13,7 @@ data:
     auth:
       htpasswd:
         file: /verdaccio/auth/htpasswd
-        max_users: -1
+        max_users: {{ .Values.verdaccio.auth.maxUsers }}
         algorithm: bcrypt
         rounds: 12
 
