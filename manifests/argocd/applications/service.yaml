@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: https://github.com/liberte-top/kubernetes.git
       targetRevision: main
-      path: manifests/service/namespace
+      path: manifests/service
     - repoURL: https://github.com/liberte-top/kubernetes.git
       targetRevision: main
       path: charts/service/auth
@@ -16,6 +16,10 @@ spec:
     - repoURL: https://github.com/liberte-top/kubernetes.git
       targetRevision: main
       path: charts/app/smoke
+      helm: {}
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
+      path: charts/service/packages
       helm: {}
   destination:
     server: https://kubernetes.default.svc

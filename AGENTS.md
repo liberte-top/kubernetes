@@ -2,11 +2,12 @@
 
 ## Document Index
 - `AGENTS.md`: kubernetes collaboration and execution conventions.
+- `ROADMAP.md`: long-term improvement guide for cluster access, GitOps, secrets, and operational cleanup.
 
 ## Current Flow
 - This repository now deploys the live `service.auth` stack.
-- Default apply includes both `manifests/core` and `manifests/service`.
-- `service/auth` is the current deployable workload baseline.
+- Default Kustomize apply includes `manifests/system`, `manifests/core`, and declarative service secrets.
+- `service/auth`, `app/smoke`, and `service/packages` are deployed by ArgoCD from Helm sources.
 - Use `scripts/kubectl.sh` for remote cluster operations via SSH tunnel reuse.
 
 ## 60-Second Local Start
@@ -14,7 +15,9 @@
 - Validate direct connectivity with `./scripts/ssh.sh`.
 - Validate tunnel setup with `./scripts/kubectl.sh tunnel status` or `./scripts/kubectl.sh tunnel restart`.
 - Inspect cluster access with `./scripts/kubectl.sh get nodes -o wide`.
-- Apply and verify the current baseline with `./scripts/kubectl.sh apply -k manifests`.
+- Render service-layer Helm output with `./scripts/render-helm.sh`.
+- Validate the Kustomize baseline with `./scripts/kubectl.sh apply -k manifests --dry-run=server`.
+- Seal runtime secrets with `./scripts/seal.sh`.
 
 ## Single Source of Truth
 - Runtime parameters live in `.env`.
@@ -31,17 +34,20 @@ kubernetes/
 ├── charts/                   # Helm source for service/app layer migrations
 │   ├── service/
 │   └── app/
+├── certs/
+│   └── seal.pem              # Public Sealed Secrets certificate
 ├── manifests/                # Kubernetes desired state
 │   ├── kustomization.yaml
+│   ├── system/
 │   ├── core/
 │   ├── argocd/
 │   └── service/
 │       ├── namespace.yaml
-│       ├── auth.yaml         # Generated locally/CI from Helm source
-│       └── smoke.yaml        # Generated locally/CI from Helm source
+│       └── secrets.yaml      # SealedSecret resources
 ├── scripts/                  # Operational entrypoints and local tooling
 │   ├── kubectl.sh            # Single kubectl runtime wrapper (SSH tunnel reuse)
 │   ├── render-helm.sh        # Generates Helm-managed rendered manifests locally
+│   ├── seal.sh               # Sealed Secrets helper CLI
 │   ├── ssh.sh                # Direct SSH connectivity helper
 │   └── utils.sh              # Shared shell helpers for scripts
 ├── .env(.example)            # Runtime parameters
@@ -71,9 +77,10 @@ kubernetes/
 - `./scripts/render-helm.sh`
 - `./scripts/ssh.sh`
 - `./scripts/ssh.sh uname -a`
+- `./scripts/seal.sh check`
 - `./scripts/kubectl.sh`
 - `./scripts/kubectl.sh get nodes -o wide`
-- `./scripts/kubectl.sh apply -k manifests`
+- `./scripts/kubectl.sh apply -k manifests --dry-run=server`
 - `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
 - `./scripts/kubectl.sh -n core get statefulset,svc,secret`
 
@@ -85,8 +92,9 @@ kubernetes/
 ## Minimal Baseline Regression Checklist
 - `./scripts/kubectl.sh tunnel status`
 - `./scripts/kubectl.sh get nodes --request-timeout=15s`
-- `./scripts/kubectl.sh apply -k manifests`
-- `./scripts/kubectl.sh apply -k manifests` (idempotency pass)
+- `./scripts/render-helm.sh`
+- `./scripts/seal.sh check`
+- `./scripts/kubectl.sh apply -k manifests --dry-run=server`
 - `./scripts/kubectl.sh -n core get statefulset,svc,secret`
 - `./scripts/kubectl.sh -n service get deploy,svc,ingress,pod`
 
@@ -94,13 +102,15 @@ kubernetes/
 - `service.auth` workflows open image-promotion PRs into this repository.
 - `service.auth` image promotion updates Helm values under `charts/service/auth/`.
 - `app.smoke` image promotion updates Helm values under `charts/app/smoke/`.
+- `packages` registry manifests live under `charts/service/packages/`; runtime secrets are represented as SealedSecrets in `manifests/service/secrets.yaml`.
 - `kubernetes` owns merge policy and ArgoCD owns reconciliation.
 - `.github/workflows/ci.verify.yml` renders Helm-managed manifests in CI, validates them, refreshes ArgoCD applications, waits for `Synced Healthy`, and runs public smoke checks.
-- `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy` even when runtime secrets make it appear `OutOfSync`.
+- `system` owns cluster-level controllers such as Sealed Secrets in `kube-system`.
+- `service` is expected to become `Synced Healthy`; `core` is required to stay `Healthy`.
 - Avoid coupling CI to local helper scripts unless the workflow itself needs script-specific behavior.
 - Use `REMOTE_TMPDIR=/tmp/liberte-k8s-${GITHUB_SHA}` as release workspace and always clean it via shell `trap`.
 - Require `INFRA_SSH_KNOWN_HOSTS` in CI and fail fast if host identity is missing.
-- Create runtime Kubernetes secrets from CI secrets before applying manifests.
+- Do not create application runtime secrets from CI; update SealedSecrets through `scripts/seal.sh`.
 - Keep `auth-api` / `auth-web` image SHAs explicit in git.
 - `ci.verify` does not set images or perform imperative deploys.
 - Run a public smoke check against `https://auth.liberte.top` after rollout completes.
