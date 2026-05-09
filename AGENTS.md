@@ -62,8 +62,9 @@ kubernetes/
 - `INFRA_SSH_KNOWN_HOSTS` (CI only): exact `known_hosts` line for `INFRA_SSH_HOST`, used by workflow SSH with strict host key checking.
 - `INFRA_KUBECONFIG_PATH` (required by `scripts/kubectl.sh`): remote kubeconfig path copied to a temp file for each kubectl invocation.
 - `INFRA_KUBECTL_TUNNEL_LOCAL_PORT` (optional, default `56443`): fixed local loopback port forwarded to remote apiserver `127.0.0.1:6443`.
+- `INFRA_KUBECTL_TUNNEL_NAMESPACE` (optional): explicit non-secret tunnel namespace stamp. Defaults to a short hash of SSH user/host and tunnel ports.
 - `INFRA_SSH_CONTROL_PERSIST_SECONDS` (optional, default `600`): SSH control connection idle keepalive seconds.
-- `INFRA_SSH_CONTROL_SOCKET` (optional): explicit SSH ControlPath socket file.
+- `INFRA_SSH_CONTROL_SOCKET` (optional): explicit SSH ControlPath socket file. Defaults to a namespace-scoped runtime socket.
 
 ## Execution Entry
 - Always run kubectl through `scripts/kubectl.sh`.
@@ -108,8 +109,9 @@ kubernetes/
 - Never print, log, paste, or commit secret values. Command output should show Secret names or key names only.
 
 ## Kubectl Tunnel Workflow
-- `scripts/kubectl.sh` uses SSH `ControlMaster/ControlPersist` tunnel reuse with fixed local port.
-- Tunnel start is lazy and lock-protected to avoid concurrent bootstrap races.
+- `scripts/kubectl.sh` uses SSH `ControlMaster/ControlPersist` tunnel reuse with a fixed local port.
+- Tunnel ownership is discovered from a non-secret process stamp in the SSH master command line; no lease/state file is maintained.
+- Tunnel start is lazy: if the stamped master exists, invocations reuse it; otherwise the first invocation creates it.
 - Each invocation still copies remote kubeconfig from `INFRA_KUBECONFIG_PATH` to a temporary local file before running kubectl with `--server` + `--kubeconfig`.
 
 ## Minimal Baseline Regression Checklist
