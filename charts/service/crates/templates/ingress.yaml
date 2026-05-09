@@ -1,4 +1,3 @@
-{{- if .Values.kellnr.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,8 +15,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "crates.componentName" (dict "root" . "component" "kellnr") }}
+                name: {{ include "crates.componentName" (dict "root" . "component" "api") }}
                 port:
-                  number: {{ .Values.kellnr.service.port }}
+                  number: {{ .Values.api.service.port }}
 {{ include "crates.ingressTls" . | indent 2 }}
-{{- end }}

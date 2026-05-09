@@ -1,6 +1,6 @@
 apiVersion: v2
 name: crates
-description: Private Rust crate registry backed by Kellnr and S3-compatible object storage
+description: Private Rust crate registry backed by mini-crates and S3-compatible object storage
 type: application
 version: 0.1.0
-appVersion: "6.3.0"
+appVersion: "0.1.0"

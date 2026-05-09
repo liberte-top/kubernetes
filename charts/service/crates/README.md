@@ -1,26 +1,22 @@
 # crates service chart
 
-Deploys Kellnr as the private Cargo registry behind `crates.liberte.top`.
+Deploys `mini-crates-api` as the private Cargo registry behind `crates.liberte.top`.
 
 The chart intentionally keeps the first deployment narrow:
 
 - S3-compatible object storage is required.
 - PostgreSQL is required.
 - crates.io proxying is disabled.
-- docs hosting is disabled.
-- runtime secrets are provided by the `crates-kellnr-env` SealedSecret.
+- runtime secrets are injected from SealedSecrets and mapped to the mini-crates API environment.
 
-Runtime Secret keys:
+The current deployment reuses the existing `crates-kellnr-env` encrypted material for database, bootstrap token, token pepper, and S3 credentials. The chart maps those keys into the mini-crates API contract:
 
 - `KELLNR_POSTGRESQL__USER`
 - `KELLNR_POSTGRESQL__PWD`
-- `KELLNR_SETUP__ADMIN_PWD`
 - `KELLNR_SETUP__ADMIN_TOKEN`
 - `KELLNR_REGISTRY__COOKIE_SIGNING_KEY`
 - `KELLNR_S3__ENDPOINT`
 - `KELLNR_S3__CRATES_BUCKET`
-- `KELLNR_S3__CRATESIO_BUCKET`
-- `KELLNR_S3__TOOLCHAIN_BUCKET`
 - `KELLNR_S3__ACCESS_KEY`
 - `KELLNR_S3__SECRET_KEY`
 

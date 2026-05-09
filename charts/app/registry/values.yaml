@@ -23,17 +23,16 @@ api:
     REGISTRY_ADMIN_SCOPE: registry:admin
     MINI_PACKAGES_INTERNAL_URL: http://packages-api:3333
     MINI_PACKAGES_PUBLIC_URL: https://packages.liberte.top
-    KELLNR_INTERNAL_URL: http://crates-kellnr:8000
-    KELLNR_PUBLIC_URL: https://crates.liberte.top
-    KELLNR_ADMIN_USERNAME: admin
+    MINI_CRATES_INTERNAL_URL: http://crates-api:3333
+    MINI_CRATES_PUBLIC_URL: https://crates.liberte.top
   envSecretRefs:
     MINI_PACKAGES_ADMIN_TOKEN:
       secretName: packages-api-env
       secretKey: BOOTSTRAP_ADMIN_TOKEN
       optional: false
-    KELLNR_ADMIN_PASSWORD:
+    MINI_CRATES_ADMIN_TOKEN:
       secretName: crates-kellnr-env
-      secretKey: KELLNR_SETUP__ADMIN_PWD
+      secretKey: KELLNR_SETUP__ADMIN_TOKEN
       optional: false
   readinessProbe:
     path: /api/v1/health

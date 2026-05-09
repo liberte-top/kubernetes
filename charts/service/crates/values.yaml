@@ -7,42 +7,62 @@ imagePullSecrets: []
 app:
   name: crates
 
-kellnr:
-  enabled: true
+api:
   replicaCount: 1
   image:
-    repository: ghcr.io/kellnr/kellnr
-    tag: "6.3.0"
-    pullPolicy: IfNotPresent
-  port: 8000
+    repository: ghcr.io/perishcode/mini-crates-api
+    tag: latest # crates-api-image
+    pullPolicy: Always
+  port: 3333
   service:
-    port: 8000
-  secretName: crates-kellnr-env
-  dataDir: /var/lib/kellnr
+    port: 3333
   env:
-    KELLNR_REGISTRY__DATA_DIR: /var/lib/kellnr
-    KELLNR_LOCAL__PORT: "8000"
-    KELLNR_ORIGIN__HOSTNAME: crates.liberte.top
-    KELLNR_ORIGIN__PORT: "443"
-    KELLNR_ORIGIN__PROTOCOL: https
-    KELLNR_POSTGRESQL__ENABLED: "true"
-    KELLNR_POSTGRESQL__ADDRESS: postgres.core.svc.cluster.local
-    KELLNR_POSTGRESQL__PORT: "5432"
-    KELLNR_POSTGRESQL__DB: kellnr
-    KELLNR_S3__ENABLED: "true"
-    KELLNR_S3__REGION: auto
-    KELLNR_S3__ALLOW_HTTP: "false"
-    KELLNR_REGISTRY__AUTH_REQUIRED: "true"
-    KELLNR_REGISTRY__NEW_CRATES_RESTRICTED: "true"
-    KELLNR_REGISTRY__ALLOW_OWNERLESS_CRATES: "false"
-    KELLNR_DOCS__ENABLED: "false"
-    KELLNR_PROXY__ENABLED: "false"
+    PORT: "3333"
+    DATABASE_HOST: postgres.core.svc.cluster.local
+    DATABASE_PORT: "5432"
+    DATABASE_NAME: kellnr
+    REGISTRY_PUBLIC_URL: https://crates.liberte.top
+    S3_REGION: auto
+    S3_FORCE_PATH_STYLE: "true"
+  envSecretRefs:
+    DATABASE_USER:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_POSTGRESQL__USER
+      optional: false
+    DATABASE_PASSWORD:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_POSTGRESQL__PWD
+      optional: false
+    BOOTSTRAP_ADMIN_TOKEN:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_SETUP__ADMIN_TOKEN
+      optional: false
+    TOKEN_PEPPER:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_REGISTRY__COOKIE_SIGNING_KEY
+      optional: false
+    S3_ENDPOINT:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_S3__ENDPOINT
+      optional: false
+    S3_BUCKET:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_S3__CRATES_BUCKET
+      optional: false
+    S3_ACCESS_KEY_ID:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_S3__ACCESS_KEY
+      optional: false
+    S3_SECRET_ACCESS_KEY:
+      secretName: crates-kellnr-env
+      secretKey: KELLNR_S3__SECRET_KEY
+      optional: false
   readinessProbe:
-    path: /api/v1/health
+    path: /-/ping
     initialDelaySeconds: 5
     periodSeconds: 10
   livenessProbe:
-    path: /api/v1/health
+    path: /-/ping
     initialDelaySeconds: 15
     periodSeconds: 20
   resources:
