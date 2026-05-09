@@ -11,7 +11,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/perishcode/mini-crates-api
-    tag: latest # crates-api-image
+    tag: sha-e4bfe860b7643a485d1eedc82130175a5e2f4c23 # crates-api-image
     pullPolicy: Always
   port: 3333
   service:
