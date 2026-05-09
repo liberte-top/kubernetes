@@ -48,7 +48,7 @@ fetch_cert() {
   "${KUBECTL}" -n "${CONTROLLER_NAMESPACE}" get secret "${name}" -o jsonpath='{.data.tls\.crt}' \
     | base64 -d > "${CERT_FILE}"
   chmod 0644 "${CERT_FILE}"
-  printf 'Wrote %s from %s/%s\n' "${CERT_FILE#${ROOT_DIR}/}" "${CONTROLLER_NAMESPACE}" "${name}"
+  printf 'Wrote %s from %s/%s\n' "${CERT_FILE#"${ROOT_DIR}"/}" "${CONTROLLER_NAMESPACE}" "${name}"
 }
 
 backup_key() {
@@ -118,6 +118,7 @@ seal_group() {
   mkdir -p "$(dirname "${output_file}")"
   (
     tmp_dir="$(mktemp -d)"
+    # shellcheck disable=SC2329
     cleanup() {
       rm -rf "${tmp_dir}"
     }
@@ -131,7 +132,7 @@ seal_group() {
     done
 
     mv "${next_file}" "${output_file}"
-    printf 'Wrote %s\n' "${output_file#${ROOT_DIR}/}"
+    printf 'Wrote %s\n' "${output_file#"${ROOT_DIR}"/}"
   )
 }
 

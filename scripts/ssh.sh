@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Usage: can run from any directory.
-# shellcheck source=./scripts/utils.sh
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=scripts/utils.sh
 source "${SCRIPT_DIR}/utils.sh" && __kubernetes_utils_guard__
 
 load_env_file "${REPO_ROOT}/.env"
