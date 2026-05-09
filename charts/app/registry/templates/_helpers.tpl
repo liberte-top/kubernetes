@@ -29,6 +29,7 @@ metadata:
 {{ include "app-registry.labels" (dict "root" $root "component" $name) | indent 4 }}
 spec:
   replicas: {{ $values.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: {{ include "app-registry.componentName" (dict "root" $root "component" $name) }}

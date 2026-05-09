@@ -31,6 +31,7 @@ metadata:
 {{ include "service-auth.labels" (dict "root" $root "component" $name) | indent 4 }}
 spec:
   replicas: {{ $values.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: {{ include "service-auth.componentName" (dict "root" $root "component" $name) }}

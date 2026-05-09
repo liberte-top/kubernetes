@@ -8,6 +8,7 @@ metadata:
 {{ include "crates.labels" (dict "root" . "component" "api") | indent 4 }}
 spec:
   replicas: {{ .Values.api.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: {{ include "crates.componentName" (dict "root" . "component" "api") }}
