@@ -39,7 +39,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/app-smoke-web
-    tag: sha-189c6c3b78a295b5d6a6409805beab3b73099827 # smoke-web-image
+    tag: sha-c79c46b828645364adfa02deaad6657ca1ce513e # smoke-web-image
     pullPolicy: Always
   port: 80
   service:
