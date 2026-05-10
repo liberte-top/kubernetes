@@ -1,0 +1,93 @@
+namespace: service
+
+commonLabels: {}
+podAnnotations: {}
+
+app:
+  name: design
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/app-design-api
+    tag: sha-PLACEHOLDER # design-api-image
+    pullPolicy: Always
+  port: 4330
+  service:
+    port: 4330
+  env:
+    PORT: "4330"
+  readinessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 3
+    periodSeconds: 5
+  livenessProbe:
+    path: /api/v1/health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/liberte-top/app-design-web
+    tag: sha-PLACEHOLDER # design-web-image
+    pullPolicy: Always
+  port: 80
+  service:
+    port: 80
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 2
+    periodSeconds: 5
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Kept for shape-parity with app-smoke; the design site is fully public so the
+# middleware is not wired into the ingress (see ingress.protected.middlewareRef).
+middleware:
+  enabled: false
+  name: design-forward-auth
+  address: http://auth-api.service.svc.cluster.local:3333/internal/auth/session/check
+  authResponseHeaders:
+    - X-Auth-Subject
+    - X-Auth-Type
+    - X-Auth-Scopes
+    - X-Auth-Email
+    - X-Auth-Profile-Id
+
+ingress:
+  className: traefik
+  host: design.liberte.top
+  tls:
+    enabled: true
+    secretName: design-liberte-top-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  # The whole site is public; the canonical ingress at `/` carries no
+  # forward-auth middleware. Empty middlewareRef => template skips the
+  # annotation entirely.
+  protected:
+    enabled: true
+    middlewareRef: ""
+  public:
+    enabled: false
+    path: /api/v1/health
+    pathType: Exact

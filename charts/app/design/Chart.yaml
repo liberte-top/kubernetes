@@ -1,0 +1,6 @@
+apiVersion: v2
+name: app-design
+description: Helm chart for app.design — the @liberte/svelte-components visual reference site
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
