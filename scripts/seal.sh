@@ -146,7 +146,8 @@ seal_service() {
     auth-api-env \
     packages-api-env \
     crates-kellnr-env \
-    packages-ghcr-pull
+    packages-ghcr-pull \
+    sre-api-env
 }
 
 check() {

@@ -1,0 +1,3 @@
+{{- if .Values.web.enabled }}
+{{ include "app-sre.component" (dict "root" . "name" "web" "values" .Values.web) }}
+{{- end }}
