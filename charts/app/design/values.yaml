@@ -39,7 +39,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/app-design-web
-    tag: sha-3715f05a3c88f54fa532faf3cd5b62063c2d2274 # design-web-image
+    tag: sha-98bb3c2deb40d15bab08d8f06833fe465e68e7ec # design-web-image
     pullPolicy: Always
   port: 80
   service:
