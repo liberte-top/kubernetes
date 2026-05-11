@@ -13,7 +13,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-sre-api
-    tag: sha-0000000000000000000000000000000000000000 # sre-api-image
+    tag: sha-9a3d3edfe4e2b498d03b5f833f6a96bfe806ffee # sre-api-image
     pullPolicy: Always
   port: 3333
   service:
@@ -47,7 +47,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-sre-web
-    tag: sha-0000000000000000000000000000000000000000 # sre-web-image
+    tag: sha-9a3d3edfe4e2b498d03b5f833f6a96bfe806ffee # sre-web-image
     pullPolicy: Always
   port: 80
   service:

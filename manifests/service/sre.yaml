@@ -68,7 +68,7 @@ spec:
         - name: packages-ghcr-pull
       containers:
         - name: sre-api
-          image: ghcr.io/liberte-top/service-sre-api:sha-0000000000000000000000000000000000000000
+          image: ghcr.io/liberte-top/service-sre-api:sha-9a3d3edfe4e2b498d03b5f833f6a96bfe806ffee
           imagePullPolicy: Always
           env:
             - name: PORT
@@ -133,7 +133,7 @@ spec:
         - name: packages-ghcr-pull
       containers:
         - name: sre-web
-          image: ghcr.io/liberte-top/service-sre-web:sha-0000000000000000000000000000000000000000
+          image: ghcr.io/liberte-top/service-sre-web:sha-9a3d3edfe4e2b498d03b5f833f6a96bfe806ffee
           imagePullPolicy: Always
           env:
             - name: SRE_API_INTERNAL_URL
