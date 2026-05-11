@@ -13,7 +13,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/app-registry-api
-    tag: sha-c5edf0ff62b8b150f801776ab9166471521f8b8b # registry-api-image
+    tag: sha-fc20b6861d81d07eeedde07092667600314ad42e # registry-api-image
     pullPolicy: Always
   port: 4320
   service:
