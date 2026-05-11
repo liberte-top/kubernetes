@@ -55,7 +55,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/app-registry-web
-    tag: sha-b3768206e72b26b37e3b03e7dd841a7ef3eddbee # registry-web-image
+    tag: sha-447c28880bfaf8d4856cc1b8f360bfb7e699fc1e # registry-web-image
     pullPolicy: Always
   port: 80
   service:
