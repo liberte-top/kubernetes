@@ -27,6 +27,10 @@ spec:
       helm: {}
     - repoURL: https://github.com/liberte-top/kubernetes.git
       targetRevision: main
+      path: charts/app/sre
+      helm: {}
+    - repoURL: https://github.com/liberte-top/kubernetes.git
+      targetRevision: main
       path: charts/service/packages
       helm: {}
     - repoURL: https://github.com/liberte-top/kubernetes.git
