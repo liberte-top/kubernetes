@@ -47,7 +47,7 @@ web:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-sre-web
-    tag: sha-9a3d3edfe4e2b498d03b5f833f6a96bfe806ffee # sre-web-image
+    tag: sha-10044e87c7e4f31a81c573a96695996b4ac65dba # sre-web-image
     pullPolicy: Always
   port: 80
   service:
