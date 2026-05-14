@@ -22,7 +22,7 @@ api:
   replicaCount: 1
   image:
     repository: ghcr.io/liberte-top/service-auth-api
-    tag: sha-bf799aefc2d4e5e26b2ee5adb7d810e0df6e4f82 # auth-api-image
+    tag: sha-090ffeaf01fad6cf2c1ecfc7ac305d3841675dbd # auth-api-image
     pullPolicy: Always
   port: 3333
   service:
